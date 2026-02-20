@@ -8,9 +8,10 @@ interface TableSelectorModalProps {
   activeTables: number[];
   tableOrders: Order[];
   onSelectOccupied: (order: Order) => void;
+  onSelectEmpty?: (num: number) => void;
 }
 
-export function TableSelectorModal({ open, onClose, activeTables, tableOrders, onSelectOccupied }: TableSelectorModalProps) {
+export function TableSelectorModal({ open, onClose, activeTables, tableOrders, onSelectOccupied, onSelectEmpty }: TableSelectorModalProps) {
   const navigate = useNavigate();
 
   const getOrderForTable = (num: number) => {
@@ -24,6 +25,8 @@ export function TableSelectorModal({ open, onClose, activeTables, tableOrders, o
     if (order) {
       onClose();
       onSelectOccupied(order);
+    } else if (onSelectEmpty) {
+      onSelectEmpty(num);
     } else {
       onClose();
       navigate(`/novo-pedido?mesa=${num}`);

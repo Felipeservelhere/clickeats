@@ -9,8 +9,10 @@ import { CartItem, Order, OrderType, Neighborhood, PaymentMethod } from '@/types
 import { useNeighborhoods } from '@/hooks/useNeighborhoods';
 import { useOrders } from '@/contexts/OrderContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTables } from '@/hooks/useTables';
 import { useCustomerAddresses, useCreateCustomer, useCreateCustomerAddress, Customer, CustomerAddress } from '@/hooks/useCustomers';
 import { CustomerAutocomplete } from '@/components/order/CustomerAutocomplete';
+import { TableSelectorModal } from '@/components/order/TableSelectorModal';
 import { MapPin, Truck, Store, UtensilsCrossed, Banknote, CreditCard, QrCode, MoreHorizontal, Home } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,14 +44,20 @@ const paymentOptions: { value: PaymentMethod; label: string; icon: React.ReactNo
 ];
 
 export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNumber }: CheckoutSheetProps) {
-  const { getNextNumber } = useOrders();
+  const { orders, getNextNumber } = useOrders();
   const { data: neighborhoods = [] } = useNeighborhoods();
+  const { data: dbTables = [] } = useTables();
   const isMobile = useIsMobile();
   const createCustomer = useCreateCustomer();
   const createAddress = useCreateCustomerAddress();
 
+  const activeTables = dbTables.filter(t => t.active).map(t => t.number);
+  const tableOrders = orders.filter(o => o.type === 'mesa' && o.status !== 'completed');
+
   const isMesaMode = forcedTableNumber !== undefined;
   const [orderType, setOrderType] = useState<OrderType>(isMesaMode ? 'mesa' : 'entrega');
+  const [showTableSelector, setShowTableSelector] = useState(false);
+  const [selectedTableNum, setSelectedTableNum] = useState<number | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -218,8 +226,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
       customerName: customerName.trim() || undefined,
       customerPhone: customerPhone.trim() || undefined,
       items,
-      tableNumber: isMesaMode ? forcedTableNumber : undefined,
-      tableReference: orderType === 'mesa' ? (isMesaMode ? String(forcedTableNumber) : mesaReference.trim() || undefined) : undefined,
+      tableNumber: isMesaMode ? forcedTableNumber : (selectedTableNum || undefined),
+      tableReference: orderType === 'mesa' ? (isMesaMode ? String(forcedTableNumber) : (selectedTableNum ? String(selectedTableNum) : mesaReference.trim() || undefined)) : undefined,
       address: orderType === 'entrega' ? address.trim() || undefined : undefined,
       addressNumber: orderType === 'entrega' ? addressNumber.trim() || undefined : undefined,
       reference: orderType === 'entrega' ? reference.trim() || undefined : undefined,
@@ -239,7 +247,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const resetForm = () => {
     setCustomerName(''); setCustomerPhone(''); setAddress(''); setAddressNumber('');
     setReference(''); setSelectedNeighborhood(null); setSelectedNeighborhoodId(''); setMesaReference(''); setObservation('');
-    setPaymentMethod('dinheiro'); setChangeFor(''); setSelectedCustomer(null);
+    setPaymentMethod('dinheiro'); setChangeFor(''); setSelectedCustomer(null); setSelectedTableNum(null);
   };
 
   const showTypeSelector = !isMesaMode;
@@ -282,7 +290,13 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
                   {(['entrega', 'retirada', 'mesa'] as OrderType[]).map(type => (
                     <button
                       key={type}
-                      onClick={() => setOrderType(type)}
+                      onClick={() => {
+                        if (type === 'mesa' && !isMobile) {
+                          setShowTableSelector(true);
+                        } else {
+                          setOrderType(type);
+                        }
+                      }}
                       className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
                         orderType === type
                           ? `order-border-${type} order-type-${type}`
@@ -358,7 +372,24 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
             {orderType === 'mesa' && !isMesaMode && (
               <div className="space-y-3 animate-fade-in">
                 <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Mesa</h4>
-                <Input placeholder="Mesa ou ponto de referência" value={mesaReference} onChange={e => setMesaReference(e.target.value)} className="bg-secondary/50" />
+                {selectedTableNum ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 p-3 rounded-lg bg-primary/10 border-2 border-primary font-heading font-bold text-center">
+                      Mesa {selectedTableNum}
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setShowTableSelector(true)}>
+                      Trocar
+                    </Button>
+                  </div>
+                ) : (
+                  isMobile ? (
+                    <Input placeholder="Mesa ou ponto de referência" value={mesaReference} onChange={e => setMesaReference(e.target.value)} className="bg-secondary/50" />
+                  ) : (
+                    <Button variant="outline" onClick={() => setShowTableSelector(true)} className="w-full h-11 gap-2">
+                      <UtensilsCrossed className="h-4 w-4" /> Selecionar Mesa
+                    </Button>
+                  )
+                )}
               </div>
             )}
 
@@ -458,6 +489,26 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Table Selector Modal */}
+      <TableSelectorModal
+        open={showTableSelector}
+        onClose={() => setShowTableSelector(false)}
+        activeTables={activeTables}
+        tableOrders={tableOrders}
+        onSelectOccupied={(order) => {
+          setSelectedTableNum(order.tableNumber || parseInt(order.tableReference || '0'));
+          setOrderType('mesa');
+          setMesaReference(order.tableReference || String(order.tableNumber));
+          setShowTableSelector(false);
+        }}
+        onSelectEmpty={(num) => {
+          setSelectedTableNum(num);
+          setOrderType('mesa');
+          setMesaReference(String(num));
+          setShowTableSelector(false);
+        }}
+      />
     </>
   );
 }
