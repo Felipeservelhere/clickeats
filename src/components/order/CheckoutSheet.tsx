@@ -104,14 +104,14 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
         </SheetHeader>
 
         <div className="space-y-5 mt-4 pb-4">
-          {/* Customer Info - only show for non-mesa or desktop */}
-          {(!isMesaMode || !isMobile) && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Cliente</h4>
-              <Input placeholder="Nome do cliente" value={customerName} onChange={e => setCustomerName(e.target.value)} className="bg-secondary/50" />
+          {/* Customer Name - always show */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Cliente</h4>
+            <Input placeholder="Nome do cliente" value={customerName} onChange={e => setCustomerName(e.target.value)} className="bg-secondary/50" />
+            {(!isMesaMode || !isMobile) && (
               <Input placeholder="Telefone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="bg-secondary/50" />
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Order Type - hide when forced mesa */}
           {showTypeSelector && (

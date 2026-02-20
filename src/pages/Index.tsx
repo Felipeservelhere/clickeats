@@ -120,9 +120,14 @@ const Index = () => {
               >
                 <span className={`font-heading font-bold text-lg ${occupied ? 'text-destructive' : 'text-foreground'}`}>{num}</span>
                 {order && (
-                  <span className="text-[10px] text-destructive/80">
-                    {order.items.reduce((s, i) => s + i.quantity, 0)} itens
-                  </span>
+                  <>
+                    {order.customerName && (
+                      <span className="text-[10px] text-destructive font-semibold truncate max-w-full px-1">{order.customerName}</span>
+                    )}
+                    <span className="text-[10px] text-destructive/80">
+                      {order.items.reduce((s, i) => s + i.quantity, 0)} itens
+                    </span>
+                  </>
                 )}
               </button>
             );
