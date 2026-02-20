@@ -228,6 +228,8 @@ export function buildDeliveryReceipt(order: {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  paymentMethod?: string;
+  changeFor?: number;
   items: Array<{
     quantity: number;
     product: { name: string; price: number; categoryId?: string; categoryName?: string };
@@ -287,15 +289,35 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="linha"></div>`;
 
   if (order.observation) {
-    html += `<div class="info"><b>Obs:</b> ${order.observation}</div>`;
+    html += `<div class="item"><b>Obs:</b> ${order.observation}</div>`;
     html += `<div class="linha"></div>`;
   }
 
-  html += `<div class="subtotal">Subtotal ${order.subtotal.toFixed(2).replace('.', ',')}</div>`;
+  html += `<div class="subtotal">Subtotal R$ ${order.subtotal.toFixed(2).replace('.', ',')}</div>`;
   if (order.deliveryFee > 0) {
-    html += `<div class="subtotal">Taxa ${order.deliveryFee.toFixed(2).replace('.', ',')}</div>`;
+    html += `<div class="subtotal">Taxa R$ ${order.deliveryFee.toFixed(2).replace('.', ',')}</div>`;
   }
-  html += `<div class="total">TOTAL ${order.total.toFixed(2).replace('.', ',')}</div>`;
+  html += `<div class="total">TOTAL R$ ${order.total.toFixed(2).replace('.', ',')}</div>`;
+
+  // Payment method
+  html += `<div class="linha"></div>`;
+  if (order.paymentMethod) {
+    const methodLabel = order.paymentMethod === 'dinheiro' ? 'DINHEIRO'
+      : order.paymentMethod === 'pix' ? 'PIX'
+      : order.paymentMethod === 'cartao' ? 'CARTÃO'
+      : 'OUTROS';
+
+    html += `<div class="item">FORMA DE PGTO: ${methodLabel}</div>`;
+
+    if (order.paymentMethod === 'dinheiro' && order.changeFor) {
+      const troco = order.changeFor - order.total;
+      html += `<div class="item">TROCO PARA: R$ ${order.changeFor.toFixed(2).replace('.', ',')} (TROCO: R$ ${troco.toFixed(2).replace('.', ',')})</div>`;
+    }
+
+    if (order.paymentMethod === 'pix') {
+      html += `<div class="item">☐ PAGO</div>`;
+    }
+  }
 
   html += `</div></body></html>`;
   return html;
