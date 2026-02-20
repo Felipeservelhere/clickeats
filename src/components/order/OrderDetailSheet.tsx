@@ -39,7 +39,9 @@ const paymentOptions: { value: PaymentMethod; label: string; icon: React.ReactNo
 
 export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliveryPrint, onComplete }: OrderDetailSheetProps) {
   const navigate = useNavigate();
-  const { updateOrder } = useOrders();
+  const { orders, updateOrder } = useOrders();
+  // Always use the latest order from context to avoid stale data
+  const currentOrder = orders.find(o => o.id === order?.id) || order;
   const { data: neighborhoods = [] } = useNeighborhoods();
   const isMobile = useIsMobile();
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -71,7 +73,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
 
   if (!order) return null;
 
-  const typeLabel = order.type === 'mesa' ? `🍽️ Mesa ${order.tableReference || ''}` : order.type === 'entrega' ? '🛵 Entrega' : '🏪 Retirada';
+  const typeLabel = currentOrder.type === 'mesa' ? `🍽️ Mesa ${currentOrder.tableReference || ''}` : currentOrder.type === 'entrega' ? '🛵 Entrega' : '🏪 Retirada';
 
   const recalcTotals = (items: CartItem[], fee: number) => {
     const newSubtotal = items.reduce((sum, item) => {
@@ -81,42 +83,42 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   };
 
   const handleChangeQuantity = (cartId: string, delta: number) => {
-    const item = order.items.find(i => i.cartId === cartId);
+    const item = currentOrder.items.find(i => i.cartId === cartId);
     if (!item) return;
 
     const newQty = item.quantity + delta;
     if (newQty <= 0) {
-      const newItems = order.items.filter(i => i.cartId !== cartId);
+      const newItems = currentOrder.items.filter(i => i.cartId !== cartId);
       if (newItems.length === 0) {
-        updateOrder(order.id, { status: 'completed' });
+        updateOrder(currentOrder.id, { status: 'completed' });
         toast.success('Pedido removido (sem itens)');
         onClose();
         return;
       }
-      const { subtotal, total } = recalcTotals(newItems, order.deliveryFee);
-      updateOrder(order.id, { items: newItems, subtotal, total });
+      const { subtotal, total } = recalcTotals(newItems, currentOrder.deliveryFee);
+      updateOrder(currentOrder.id, { items: newItems, subtotal, total });
     } else {
-      const newItems = order.items.map(i => i.cartId === cartId ? { ...i, quantity: newQty } : i);
-      const { subtotal, total } = recalcTotals(newItems, order.deliveryFee);
-      updateOrder(order.id, { items: newItems, subtotal, total });
+      const newItems = currentOrder.items.map(i => i.cartId === cartId ? { ...i, quantity: newQty } : i);
+      const { subtotal, total } = recalcTotals(newItems, currentOrder.deliveryFee);
+      updateOrder(currentOrder.id, { items: newItems, subtotal, total });
     }
   };
 
   const handleAddMore = () => {
-    sessionStorage.setItem('addToOrderId', order.id);
+    sessionStorage.setItem('addToOrderId', currentOrder.id);
     onClose();
     navigate('/novo-pedido');
   };
 
   const openInfoModal = () => {
-    setEditName(order.customerName || '');
-    setEditPhone(order.customerPhone || '');
-    setEditAddress(order.address || '');
-    setEditAddressNumber(order.addressNumber || '');
-    setEditReference(order.reference || '');
-    setEditNeighborhoodId(order.neighborhood?.id || '');
-    setEditPayment(order.paymentMethod || 'dinheiro');
-    setEditChangeFor(order.changeFor ? String(order.changeFor) : '');
+    setEditName(currentOrder.customerName || '');
+    setEditPhone(currentOrder.customerPhone || '');
+    setEditAddress(currentOrder.address || '');
+    setEditAddressNumber(currentOrder.addressNumber || '');
+    setEditReference(currentOrder.reference || '');
+    setEditNeighborhoodId(currentOrder.neighborhood?.id || '');
+    setEditPayment(currentOrder.paymentMethod || 'dinheiro');
+    setEditChangeFor(currentOrder.changeFor ? String(currentOrder.changeFor) : '');
     setSelectedCustomer(null);
     setSelectedAddressId(null);
     setShowInfoModal(true);
@@ -151,12 +153,12 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
     const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
     const neighborhoodObj: Neighborhood | undefined = neighborhood
       ? { id: neighborhood.id, name: neighborhood.name, fee: Number(neighborhood.fee) }
-      : order.neighborhood;
+      : currentOrder.neighborhood;
 
-    const newDeliveryFee = order.type === 'entrega' && neighborhoodObj ? neighborhoodObj.fee : order.deliveryFee;
-    const newTotal = order.subtotal + newDeliveryFee;
+    const newDeliveryFee = currentOrder.type === 'entrega' && neighborhoodObj ? neighborhoodObj.fee : currentOrder.deliveryFee;
+    const newTotal = currentOrder.subtotal + newDeliveryFee;
 
-    updateOrder(order.id, {
+    updateOrder(currentOrder.id, {
       customerName: editName.trim() || undefined,
       customerPhone: editPhone.trim() || undefined,
       address: editAddress.trim() || undefined,
@@ -174,8 +176,8 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
 
   const editTotal = (() => {
     const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
-    const fee = order.type === 'entrega' && neighborhood ? Number(neighborhood.fee) : order.deliveryFee;
-    return order.subtotal + fee;
+    const fee = currentOrder.type === 'entrega' && neighborhood ? Number(neighborhood.fee) : currentOrder.deliveryFee;
+    return currentOrder.subtotal + fee;
   })();
   const editChangeAmount = editPayment === 'dinheiro' && editChangeFor ? parseFloat(editChangeFor) - editTotal : 0;
 
@@ -187,7 +189,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
             <SheetTitle className="font-heading text-xl flex items-center gap-2">
               {typeLabel}
               <span className="text-sm font-normal text-muted-foreground ml-auto">
-                Pedido #{order.number}
+                Pedido #{currentOrder.number}
               </span>
             </SheetTitle>
           </SheetHeader>
@@ -195,11 +197,11 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
           {/* Customer info summary + edit button */}
           <div className="mt-3 flex items-start justify-between gap-2">
             <div className="space-y-1 text-sm min-w-0">
-              {order.customerName && <p className="truncate"><strong>Cliente:</strong> {order.customerName}</p>}
-              {order.customerPhone && <p><strong>Tel:</strong> {order.customerPhone}</p>}
-              {order.type === 'entrega' && order.address && <p className="truncate"><strong>End:</strong> {order.address}{order.addressNumber ? `, ${order.addressNumber}` : ''}</p>}
-              {order.type === 'entrega' && order.neighborhood && <p><strong>Bairro:</strong> {order.neighborhood.name}</p>}
-              {order.paymentMethod && <p><strong>Pgto:</strong> {paymentLabels[order.paymentMethod] || order.paymentMethod}</p>}
+              {currentOrder.customerName && <p className="truncate"><strong>Cliente:</strong> {currentOrder.customerName}</p>}
+              {currentOrder.customerPhone && <p><strong>Tel:</strong> {currentOrder.customerPhone}</p>}
+              {currentOrder.type === 'entrega' && currentOrder.address && <p className="truncate"><strong>End:</strong> {currentOrder.address}{currentOrder.addressNumber ? `, ${currentOrder.addressNumber}` : ''}</p>}
+              {currentOrder.type === 'entrega' && currentOrder.neighborhood && <p><strong>Bairro:</strong> {currentOrder.neighborhood.name}</p>}
+              {currentOrder.paymentMethod && <p><strong>Pgto:</strong> {paymentLabels[currentOrder.paymentMethod] || currentOrder.paymentMethod}</p>}
             </div>
             <Button variant="outline" size="sm" onClick={openInfoModal} className="shrink-0 gap-1.5">
               <User className="h-3.5 w-3.5" /> Info
@@ -209,7 +211,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
           <div className="space-y-3 mt-4 pb-4">
             {/* Items list with +/- */}
             <div className="space-y-2">
-              {order.items.map((item) => (
+              {currentOrder.items.map((item) => (
                 <div
                   key={item.cartId}
                   className="flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border border-border"
@@ -252,17 +254,17 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
             </div>
 
             {/* Delivery fee */}
-            {order.type === 'entrega' && order.deliveryFee > 0 && (
+            {currentOrder.type === 'entrega' && currentOrder.deliveryFee > 0 && (
               <div className="flex justify-between text-sm p-3 rounded-lg bg-secondary/20">
                 <span className="text-muted-foreground">Taxa de entrega</span>
-                <span>R$ {order.deliveryFee.toFixed(2)}</span>
+                <span>R$ {currentOrder.deliveryFee.toFixed(2)}</span>
               </div>
             )}
 
             {/* Total */}
             <div className="flex justify-between font-heading font-bold text-lg p-3 rounded-lg bg-secondary/30 border border-border">
               <span>Total</span>
-              <span className="text-primary">R$ {order.total.toFixed(2)}</span>
+              <span className="text-primary">R$ {currentOrder.total.toFixed(2)}</span>
             </div>
 
             {/* Actions */}
@@ -270,13 +272,13 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
               <Button variant="outline" onClick={handleAddMore} className="gap-1.5 h-11">
                 <Plus className="h-4 w-4" /> Adicionar
               </Button>
-              <Button variant="outline" onClick={() => onKitchenPrint(order)} className="gap-1.5 h-11">
+              <Button variant="outline" onClick={() => onKitchenPrint(currentOrder)} className="gap-1.5 h-11">
                 <ChefHat className="h-4 w-4" /> Cozinha
               </Button>
-              <Button variant="outline" onClick={() => onDeliveryPrint(order)} className="gap-1.5 h-11">
+              <Button variant="outline" onClick={() => onDeliveryPrint(currentOrder)} className="gap-1.5 h-11">
                 <Printer className="h-4 w-4" /> Resumo
               </Button>
-              <Button onClick={() => { onComplete(order); onClose(); }} className="gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground">
+              <Button onClick={() => { onComplete(currentOrder); onClose(); }} className="gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground">
                 <Check className="h-4 w-4" /> Concluir
               </Button>
             </div>
@@ -315,7 +317,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
             </div>
 
             {/* Saved addresses - always visible */}
-            {order.type === 'entrega' && customerAddresses.length > 0 && (
+            {currentOrder.type === 'entrega' && customerAddresses.length > 0 && (
               <div className="space-y-2 animate-fade-in">
                 <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                   <Home className="h-4 w-4" /> Endereços salvos
@@ -343,7 +345,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
               </div>
             )}
 
-            {order.type === 'entrega' && (
+            {currentOrder.type === 'entrega' && (
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1">
@@ -380,7 +382,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
             )}
 
             {/* Payment - hide for mesa */}
-            {order.type !== 'mesa' && (
+            {currentOrder.type !== 'mesa' && (
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-muted-foreground">Forma de Pagamento</label>
                 <div className="grid grid-cols-4 gap-2">
@@ -422,12 +424,12 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
             <div className="space-y-2 p-3 rounded-lg bg-secondary/20 border border-border">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>R$ {order.subtotal.toFixed(2)}</span>
+                <span>R$ {currentOrder.subtotal.toFixed(2)}</span>
               </div>
-              {order.type === 'entrega' && (
+              {currentOrder.type === 'entrega' && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Taxa de entrega</span>
-                  <span>R$ {(editTotal - order.subtotal).toFixed(2)}</span>
+                  <span>R$ {(editTotal - currentOrder.subtotal).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-heading font-bold text-base border-t border-border pt-2">
