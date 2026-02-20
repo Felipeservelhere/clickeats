@@ -20,7 +20,7 @@ const NewOrder = () => {
   const mesaParam = searchParams.get('mesa');
   const forcedTableNumber = mesaParam ? parseInt(mesaParam, 10) : undefined;
 
-  const { addOrder, addItemsToTableOrder, getActiveTableOrder } = useOrders();
+  const { orders, addOrder, addItemsToTableOrder, getActiveTableOrder, updateOrder } = useOrders();
   const { data: dbCategories = [] } = useCategories();
   const { data: dbProducts = [] } = useProducts();
 
@@ -118,6 +118,25 @@ const NewOrder = () => {
   };
 
   const handleFinalize = async (order: Order) => {
+    // Check if adding to an existing order (from OrderDetailSheet)
+    const addToOrderId = sessionStorage.getItem('addToOrderId');
+    if (addToOrderId) {
+      sessionStorage.removeItem('addToOrderId');
+      // Add new items to the existing order
+      const existing = orders.find(o => o.id === addToOrderId && o.status !== 'completed');
+      if (existing) {
+        const updatedItems = [...existing.items, ...order.items];
+        const updatedSubtotal = existing.subtotal + order.subtotal;
+        const updatedTotal = updatedSubtotal + existing.deliveryFee;
+        updateOrder(addToOrderId, { items: updatedItems, subtotal: updatedSubtotal, total: updatedTotal });
+        await autoQZPrint({ ...existing, items: updatedItems, subtotal: updatedSubtotal, total: updatedTotal }, order.items);
+        setShowCheckout(false);
+        setCart([]);
+        navigate('/');
+        return;
+      }
+    }
+
     // Check if mesa order and there's already an active order for this table
     if (order.type === 'mesa' && order.tableReference) {
       const existing = getActiveTableOrder(order.tableReference);
