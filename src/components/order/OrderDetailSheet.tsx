@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Order, CartItem, Neighborhood, PaymentMethod } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
 import { useNeighborhoods } from '@/hooks/useNeighborhoods';
-import { Plus, Minus, ChefHat, Printer, Check, User, Banknote, CreditCard, QrCode, MoreHorizontal, MapPin } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useCustomerAddresses, Customer, CustomerAddress } from '@/hooks/useCustomers';
+import { CustomerAutocomplete } from '@/components/order/CustomerAutocomplete';
+import { Plus, Minus, ChefHat, Printer, Check, User, Banknote, CreditCard, QrCode, MoreHorizontal, MapPin, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -38,6 +41,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   const navigate = useNavigate();
   const { updateOrder } = useOrders();
   const { data: neighborhoods = [] } = useNeighborhoods();
+  const isMobile = useIsMobile();
   const [showInfoModal, setShowInfoModal] = useState(false);
 
   // Info modal state
@@ -49,10 +53,25 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   const [editNeighborhoodId, setEditNeighborhoodId] = useState('');
   const [editPayment, setEditPayment] = useState<PaymentMethod>('dinheiro');
   const [editChangeFor, setEditChangeFor] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
+  // Customer addresses
+  const { data: customerAddresses = [] } = useCustomerAddresses(selectedCustomer?.id || null);
+
+  // Auto-fill default address when customer selected
+  useEffect(() => {
+    if (selectedCustomer && customerAddresses.length > 0 && order?.type === 'entrega') {
+      const defaultAddr = customerAddresses.find(a => a.is_default) || customerAddresses[0];
+      if (defaultAddr && !selectedAddressId) {
+        handleSelectAddress(defaultAddr);
+      }
+    }
+  }, [selectedCustomer, customerAddresses, order?.type]);
 
   if (!order) return null;
 
-  const typeLabel = order.type === 'entrega' ? '🛵 Entrega' : '🏪 Retirada';
+  const typeLabel = order.type === 'mesa' ? `🍽️ Mesa ${order.tableReference || ''}` : order.type === 'entrega' ? '🛵 Entrega' : '🏪 Retirada';
 
   const recalcTotals = (items: CartItem[], fee: number) => {
     const newSubtotal = items.reduce((sum, item) => {
@@ -67,7 +86,6 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
 
     const newQty = item.quantity + delta;
     if (newQty <= 0) {
-      // Remove item
       const newItems = order.items.filter(i => i.cartId !== cartId);
       if (newItems.length === 0) {
         updateOrder(order.id, { status: 'completed' });
@@ -85,7 +103,6 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   };
 
   const handleAddMore = () => {
-    // Store order id to add items back to this order
     sessionStorage.setItem('addToOrderId', order.id);
     onClose();
     navigate('/novo-pedido');
@@ -100,7 +117,34 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
     setEditNeighborhoodId(order.neighborhood?.id || '');
     setEditPayment(order.paymentMethod || 'dinheiro');
     setEditChangeFor(order.changeFor ? String(order.changeFor) : '');
+    setSelectedCustomer(null);
+    setSelectedAddressId(null);
     setShowInfoModal(true);
+  };
+
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setEditName(customer.name);
+    if (customer.phone) setEditPhone(customer.phone);
+    setSelectedAddressId(null);
+  };
+
+  const handleCreateNewCustomer = (name: string) => {
+    setEditName(name);
+    setSelectedCustomer(null);
+  };
+
+  const handleSelectAddress = (addr: CustomerAddress) => {
+    setEditAddress(addr.address);
+    setEditAddressNumber(addr.address_number || '');
+    setEditReference(addr.reference || '');
+    setSelectedAddressId(addr.id);
+    if (addr.neighborhood_id) {
+      const n = neighborhoods.find(n => n.id === addr.neighborhood_id);
+      if (n) {
+        setEditNeighborhoodId(n.id);
+      }
+    }
   };
 
   const handleSaveInfo = () => {
@@ -128,8 +172,6 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
     setShowInfoModal(false);
   };
 
-  // Get the latest order from context (since updateOrder updates it)
-  const currentOrder = order;
   const editTotal = (() => {
     const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
     const fee = order.type === 'entrega' && neighborhood ? Number(neighborhood.fee) : order.deliveryFee;
@@ -252,14 +294,54 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Customer name with autocomplete */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-muted-foreground">Nome</label>
-              <Input value={editName} onChange={e => setEditName(e.target.value)} className="bg-secondary/50" />
+              <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Cliente</label>
+              {isMobile ? (
+                <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Nome do cliente" className="bg-secondary/50" />
+              ) : (
+                <CustomerAutocomplete
+                  value={editName}
+                  onChange={setEditName}
+                  onSelectCustomer={handleSelectCustomer}
+                  onCreateNew={handleCreateNewCustomer}
+                  className="bg-secondary/50"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-muted-foreground">Telefone</label>
-              <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="bg-secondary/50" />
+              <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Telefone" className="bg-secondary/50" />
             </div>
+
+            {/* Saved addresses - always visible */}
+            {order.type === 'entrega' && customerAddresses.length > 0 && (
+              <div className="space-y-2 animate-fade-in">
+                <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <Home className="h-4 w-4" /> Endereços salvos
+                </label>
+                <div className="space-y-2">
+                  {customerAddresses.map(addr => (
+                    <button
+                      key={addr.id}
+                      onClick={() => handleSelectAddress(addr)}
+                      className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 transition-colors text-left ${
+                        selectedAddressId === addr.id
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-secondary/30 hover:bg-secondary/50'
+                      }`}
+                    >
+                      <Home className={`h-4 w-4 mt-0.5 shrink-0 ${selectedAddressId === addr.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm">{addr.label} {addr.is_default && <span className="text-xs text-primary">(Padrão)</span>}</p>
+                        <p className="text-xs text-muted-foreground truncate">{addr.address}{addr.address_number ? `, ${addr.address_number}` : ''}</p>
+                        {addr.neighborhood_name && <p className="text-xs text-muted-foreground">{addr.neighborhood_name}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {order.type === 'entrega' && (
               <>
@@ -297,41 +379,61 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
               </>
             )}
 
-            {/* Payment */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-muted-foreground">Forma de Pagamento</label>
-              <div className="grid grid-cols-4 gap-2">
-                {paymentOptions.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setEditPayment(opt.value)}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all text-xs ${
-                      editPayment === opt.value
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
-                    }`}
-                  >
-                    {opt.icon}
-                    <span className="font-semibold">{opt.label}</span>
-                  </button>
-                ))}
+            {/* Payment - hide for mesa */}
+            {order.type !== 'mesa' && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-muted-foreground">Forma de Pagamento</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {paymentOptions.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setEditPayment(opt.value)}
+                      className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all text-xs ${
+                        editPayment === opt.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
+                      }`}
+                    >
+                      {opt.icon}
+                      <span className="font-semibold">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {editPayment === 'dinheiro' && (
+                  <div className="space-y-1 animate-fade-in">
+                    <Input
+                      type="number"
+                      placeholder="Troco para quanto? (R$)"
+                      value={editChangeFor}
+                      onChange={e => setEditChangeFor(e.target.value)}
+                      className="bg-secondary/50"
+                    />
+                    {editChangeFor && parseFloat(editChangeFor) > editTotal && (
+                      <p className="text-sm font-semibold text-primary">
+                        Troco: R$ {editChangeAmount.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
-              {editPayment === 'dinheiro' && (
-                <div className="space-y-1 animate-fade-in">
-                  <Input
-                    type="number"
-                    placeholder="Troco para quanto? (R$)"
-                    value={editChangeFor}
-                    onChange={e => setEditChangeFor(e.target.value)}
-                    className="bg-secondary/50"
-                  />
-                  {editChangeFor && parseFloat(editChangeFor) > editTotal && (
-                    <p className="text-sm font-semibold text-primary">
-                      Troco: R$ {editChangeAmount.toFixed(2)}
-                    </p>
-                  )}
+            )}
+
+            {/* Values summary */}
+            <div className="space-y-2 p-3 rounded-lg bg-secondary/20 border border-border">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>R$ {order.subtotal.toFixed(2)}</span>
+              </div>
+              {order.type === 'entrega' && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Taxa de entrega</span>
+                  <span>R$ {(editTotal - order.subtotal).toFixed(2)}</span>
                 </div>
               )}
+              <div className="flex justify-between font-heading font-bold text-base border-t border-border pt-2">
+                <span>Total</span>
+                <span className="text-primary">R$ {editTotal.toFixed(2)}</span>
+              </div>
             </div>
 
             <Button onClick={handleSaveInfo} className="w-full h-11 font-semibold">
