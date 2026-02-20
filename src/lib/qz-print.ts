@@ -76,25 +76,35 @@ export function savePrinter(name: string) {
   localStorage.setItem('qz-printer', name);
 }
 
-// ESC/POS receipt builder
-const ESC = '\x1B';
-const GS = '\x1D';
-const BOLD_ON = ESC + 'E' + '\x01';
-const BOLD_OFF = ESC + 'E' + '\x00';
-const CENTER = ESC + 'a' + '\x01';
-const LEFT = ESC + 'a' + '\x00';
-const RIGHT = ESC + 'a' + '\x02';
-const DOUBLE = GS + '!' + '\x11';
-const NORMAL = GS + '!' + '\x00';
-const RESET = ESC + '@';
-const CUT = GS + 'V' + '\x00';
-const LINE = '================================\n';
-const DASHED = '--------------------------------\n';
-const FEED = '\n\n\n';
+// ─── HTML Receipt Builders ───
 
-function padLine(left: string, right: string, width = 32): string {
-  const space = width - left.length - right.length;
-  return left + (space > 0 ? ' '.repeat(space) : ' ') + right + '\n';
+const RECEIPT_STYLE = `
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Courier New', monospace; width: 280px; color: #000; background: #fff; padding: 8px; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .big { font-size: 18px; font-weight: bold; }
+  .huge { font-size: 24px; font-weight: bold; }
+  .small { font-size: 11px; }
+  .line { border-top: 1px dashed #000; margin: 6px 0; }
+  .line-solid { border-top: 2px solid #000; margin: 6px 0; }
+  .row { display: flex; justify-content: space-between; padding: 1px 0; }
+  .item { padding: 4px 0; }
+  .item-name { font-weight: bold; font-size: 13px; }
+  .item-addon { font-size: 11px; color: #444; padding-left: 12px; }
+  .item-obs { font-size: 11px; color: #000; padding-left: 12px; font-weight: bold; }
+  .total-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; padding: 4px 0; }
+  .footer { text-align: center; font-size: 10px; color: #666; margin-top: 8px; }
+</style>
+`;
+
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  return {
+    date: d.toLocaleDateString('pt-BR'),
+    time: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+  };
 }
 
 export function buildKitchenReceipt(order: {
@@ -111,58 +121,46 @@ export function buildKitchenReceipt(order: {
     observation?: string;
   }>;
 }): string {
-  const lines: string[] = [];
   const typeLabel = order.type === 'mesa' ? 'MESA' : order.type === 'entrega' ? 'ENTREGA' : 'RETIRADA';
-  const d = new Date(order.createdAt);
-  const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  const date = d.toLocaleDateString('pt-BR');
+  const { date, time } = formatDateTime(order.createdAt);
+  const totalItems = order.items.reduce((s, i) => s + i.quantity, 0);
 
-  lines.push(RESET);
-  lines.push(CENTER);
-  lines.push(LINE);
-  lines.push(BOLD_ON + DOUBLE);
-  lines.push(`** COZINHA **\n`);
-  lines.push(NORMAL + BOLD_OFF);
-  lines.push(LINE);
-  lines.push(BOLD_ON + DOUBLE);
-  lines.push(`${typeLabel} #${order.number}\n`);
-  lines.push(NORMAL + BOLD_OFF);
-  lines.push(`${date}  ${time}\n`);
+  let html = `<html><head>${RECEIPT_STYLE}</head><body>`;
+  html += `<div class="line-solid"></div>`;
+  html += `<div class="center huge">★ COZINHA ★</div>`;
+  html += `<div class="line-solid"></div>`;
+  html += `<div class="center huge" style="margin:8px 0">${typeLabel} #${order.number}</div>`;
+  html += `<div class="center small">${date} ${time}</div>`;
 
   if (order.customerName) {
-    lines.push(BOLD_ON + `${order.customerName}\n` + BOLD_OFF);
+    html += `<div class="center bold" style="margin-top:4px">${order.customerName}</div>`;
   }
   if (order.type === 'mesa' && order.tableReference) {
-    lines.push(`Mesa: ${order.tableReference}\n`);
+    html += `<div class="center bold">Mesa: ${order.tableReference}</div>`;
   }
 
-  lines.push(LINE);
-  lines.push(LEFT);
-  lines.push(CENTER + BOLD_ON + 'ITENS DO PEDIDO\n' + BOLD_OFF);
-  lines.push(LEFT);
-  lines.push(DASHED);
+  html += `<div class="line-solid"></div>`;
+  html += `<div class="center bold small" style="margin:2px 0">ITENS DO PEDIDO</div>`;
+  html += `<div class="line"></div>`;
 
   for (const item of order.items) {
-    lines.push(BOLD_ON);
-    lines.push(` ${item.quantity}x  ${item.product.name.toUpperCase()}\n`);
-    lines.push(BOLD_OFF);
+    html += `<div class="item">`;
+    html += `<div class="item-name">${item.quantity}x  ${item.product.name.toUpperCase()}</div>`;
     if (item.selectedAddons.length > 0) {
-      lines.push(`    + ${item.selectedAddons.map(a => a.name).join(', ')}\n`);
+      html += `<div class="item-addon">+ ${item.selectedAddons.map(a => a.name).join(', ')}</div>`;
     }
     if (item.observation) {
-      lines.push(BOLD_ON + `    * OBS: ${item.observation}\n` + BOLD_OFF);
+      html += `<div class="item-obs">⚠ OBS: ${item.observation}</div>`;
     }
-    lines.push('\n');
+    html += `</div>`;
   }
 
-  lines.push(LINE);
-  lines.push(CENTER);
-  lines.push(`${order.items.reduce((s, i) => s + i.quantity, 0)} ITEM(NS) NO TOTAL\n`);
-  lines.push(LINE);
-  lines.push(FEED);
-  lines.push(CUT);
+  html += `<div class="line-solid"></div>`;
+  html += `<div class="center bold">${totalItems} ITEM(NS) NO TOTAL</div>`;
+  html += `<div class="line-solid"></div>`;
+  html += `</body></html>`;
 
-  return lines.join('');
+  return html;
 }
 
 export function buildDeliveryReceipt(order: {
@@ -188,84 +186,72 @@ export function buildDeliveryReceipt(order: {
     observation?: string;
   }>;
 }): string {
-  const lines: string[] = [];
   const typeLabel = order.type === 'mesa' ? 'MESA' : order.type === 'entrega' ? 'ENTREGA' : 'RETIRADA';
-  const d = new Date(order.createdAt);
-  const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  const date = d.toLocaleDateString('pt-BR');
+  const { date, time } = formatDateTime(order.createdAt);
 
-  lines.push(RESET);
-  lines.push(CENTER);
-  lines.push(LINE);
-  lines.push(BOLD_ON + DOUBLE);
-  lines.push(`${typeLabel} #${order.number}\n`);
-  lines.push(NORMAL + BOLD_OFF);
-  lines.push(`${date}  ${time}\n`);
+  let html = `<html><head>${RECEIPT_STYLE}</head><body>`;
+  html += `<div class="line-solid"></div>`;
+  html += `<div class="center huge">${typeLabel} #${order.number}</div>`;
+  html += `<div class="center small">${date} ${time}</div>`;
 
   if (order.customerName) {
-    lines.push(BOLD_ON + `${order.customerName}\n` + BOLD_OFF);
+    html += `<div class="center bold" style="margin-top:4px">${order.customerName}</div>`;
   }
   if (order.customerPhone) {
-    lines.push(`Tel: ${order.customerPhone}\n`);
+    html += `<div class="center small">Tel: ${order.customerPhone}</div>`;
   }
 
-  lines.push(LINE);
-  lines.push(LEFT);
+  html += `<div class="line-solid"></div>`;
 
   // Address
   if (order.type === 'entrega') {
     if (order.address) {
-      lines.push(BOLD_ON + 'ENDERECO:\n' + BOLD_OFF);
-      lines.push(` ${order.address}${order.addressNumber ? ', ' + order.addressNumber : ''}\n`);
+      html += `<div class="bold small">ENDEREÇO:</div>`;
+      html += `<div class="small">${order.address}${order.addressNumber ? ', ' + order.addressNumber : ''}</div>`;
     }
-    if (order.reference) lines.push(` Ref: ${order.reference}\n`);
-    if (order.neighborhood) lines.push(` Bairro: ${order.neighborhood.name}\n`);
-    lines.push(DASHED);
+    if (order.reference) html += `<div class="small">Ref: ${order.reference}</div>`;
+    if (order.neighborhood) html += `<div class="small">Bairro: ${order.neighborhood.name}</div>`;
+    html += `<div class="line"></div>`;
   }
 
-  // Items with prices
-  lines.push(CENTER + BOLD_ON + 'ITENS\n' + BOLD_OFF);
-  lines.push(LEFT);
-  lines.push(DASHED);
+  // Items
+  html += `<div class="center bold small">ITENS</div>`;
+  html += `<div class="line"></div>`;
 
   for (const item of order.items) {
     const itemTotal = (item.product.price + item.selectedAddons.reduce((a, ad) => a + ad.price, 0)) * item.quantity;
-    lines.push(BOLD_ON);
-    lines.push(padLine(` ${item.quantity}x ${item.product.name}`, `R$${itemTotal.toFixed(2)}`));
-    lines.push(BOLD_OFF);
+    html += `<div class="item">`;
+    html += `<div class="row"><span class="item-name">${item.quantity}x ${item.product.name}</span><span class="bold">R$${itemTotal.toFixed(2)}</span></div>`;
     if (item.selectedAddons.length > 0) {
-      lines.push(`    + ${item.selectedAddons.map(a => a.name).join(', ')}\n`);
+      html += `<div class="item-addon">+ ${item.selectedAddons.map(a => a.name).join(', ')}</div>`;
     }
     if (item.observation) {
-      lines.push(`    * OBS: ${item.observation}\n`);
+      html += `<div class="item-obs">⚠ OBS: ${item.observation}</div>`;
     }
+    html += `</div>`;
   }
 
-  lines.push(DASHED);
+  html += `<div class="line"></div>`;
 
   if (order.observation) {
-    lines.push(BOLD_ON + 'OBS GERAL:\n' + BOLD_OFF);
-    lines.push(` ${order.observation}\n`);
-    lines.push(DASHED);
+    html += `<div class="bold small">OBS GERAL:</div>`;
+    html += `<div class="small">${order.observation}</div>`;
+    html += `<div class="line"></div>`;
   }
 
   // Totals
-  lines.push(padLine(' Subtotal:', `R$${order.subtotal.toFixed(2)}`));
+  html += `<div class="row small"><span>Subtotal</span><span>R$${order.subtotal.toFixed(2)}</span></div>`;
   if (order.deliveryFee > 0) {
-    lines.push(padLine(' Taxa entrega:', `R$${order.deliveryFee.toFixed(2)}`));
+    html += `<div class="row small"><span>Taxa entrega</span><span>R$${order.deliveryFee.toFixed(2)}</span></div>`;
   }
-  lines.push(LINE);
-  lines.push(CENTER + BOLD_ON + DOUBLE);
-  lines.push(`TOTAL: R$${order.total.toFixed(2)}\n`);
-  lines.push(NORMAL + BOLD_OFF);
-  lines.push(LINE);
+  html += `<div class="line-solid"></div>`;
+  html += `<div class="total-row"><span>TOTAL</span><span>R$${order.total.toFixed(2)}</span></div>`;
+  html += `<div class="line-solid"></div>`;
 
-  lines.push(CENTER);
-  lines.push('\nObrigado pela preferencia!\n');
-  lines.push(FEED);
-  lines.push(CUT);
+  html += `<div class="footer">Obrigado pela preferência!</div>`;
+  html += `</body></html>`;
 
-  return lines.join('');
+  return html;
 }
 
 export async function printRaw(data: string, printerName?: string): Promise<boolean> {
@@ -282,10 +268,18 @@ export async function printRaw(data: string, printerName?: string): Promise<bool
   }
 
   try {
-    const config = qz.configs.create(printer);
+    const config = qz.configs.create(printer, {
+      margins: { top: 0, right: 0, bottom: 0, left: 0 },
+      units: 'mm',
+      size: { width: 80 },
+      colorType: 'grayscale',
+      scaleContent: true,
+      rasterize: true,
+    });
     await qz.print(config, [{
-      type: 'raw',
-      format: 'command',
+      type: 'pixel',
+      format: 'html',
+      flavor: 'plain',
       data: data,
     }]);
     return true;
