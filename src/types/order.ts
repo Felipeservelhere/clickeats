@@ -1,0 +1,58 @@
+export type OrderType = 'mesa' | 'entrega' | 'retirada';
+export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed';
+
+export interface Addon {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  categoryId: string;
+  description?: string;
+  addons: Addon[];
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+export interface CartItem {
+  cartId: string;
+  product: Product;
+  selectedAddons: Addon[];
+  quantity: number;
+  observation?: string;
+}
+
+export interface Neighborhood {
+  id: string;
+  name: string;
+  fee: number;
+}
+
+export interface Order {
+  id: string;
+  number: number;
+  type: OrderType;
+  status: OrderStatus;
+  customerName?: string;
+  customerPhone?: string;
+  items: CartItem[];
+  tableNumber?: number;
+  tableReference?: string;
+  address?: string;
+  addressNumber?: string;
+  reference?: string;
+  neighborhood?: Neighborhood;
+  observation?: string;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  createdAt: string;
+}
