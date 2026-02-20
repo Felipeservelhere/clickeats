@@ -14,6 +14,7 @@ export interface DbProduct {
   price: number;
   category_id: string;
   description: string | null;
+  image_url: string | null;
   sort_order: number;
   addons: DbAddon[];
 }
@@ -47,7 +48,7 @@ export function useCreateProduct() {
 export function useUpdateProduct() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; price?: number; category_id?: string; description?: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; price?: number; category_id?: string; description?: string; image_url?: string }) => {
       const { error } = await supabase.from('products').update(updates).eq('id', id);
       if (error) throw error;
     },

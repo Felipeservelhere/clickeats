@@ -10,6 +10,7 @@ import { CheckoutSheet } from '@/components/order/CheckoutSheet';
 import { PrintModal } from '@/components/order/PrintModal';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { FoodIcon } from '@/components/FoodIcon';
 
 const NewOrder = () => {
   const navigate = useNavigate();
@@ -126,7 +127,7 @@ const NewOrder = () => {
                   : 'bg-secondary text-secondary-foreground hover:bg-accent'
               }`}
             >
-              <span>{cat.icon}</span>
+              <FoodIcon name={cat.icon} size={16} />
               <span>{cat.name}</span>
             </button>
           ))}
@@ -140,7 +141,7 @@ const NewOrder = () => {
           return (
             <div key={cat.id} ref={el => { sectionRefs.current[cat.id] = el; }} className="pt-4">
               <h2 className="font-heading font-bold text-base text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-                <span>{cat.icon}</span> {cat.name}
+                <FoodIcon name={cat.icon} size={18} /> {cat.name}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                 {catProducts.map(product => (
