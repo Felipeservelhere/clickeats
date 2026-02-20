@@ -110,7 +110,7 @@ const Index = () => {
                 key={num}
                 onClick={() => {
                   if (occupied && order) setTableDetailOrder(order);
-                  else navigate('/novo-pedido');
+                  else navigate(`/novo-pedido?mesa=${num}`);
                 }}
                 className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
                   occupied
