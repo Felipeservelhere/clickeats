@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { DbProduct } from '@/hooks/useProducts';
 import { DbPizzaSize, DbPizzaBorder, DbProductPizzaPrice, DbProductIngredient } from '@/hooks/usePizza';
 import { CartItem, Product, Addon, PizzaDetail } from '@/types/order';
-import { Minus, Plus, Pencil, X, ChevronRight } from 'lucide-react';
+import { Minus, Plus, X, ChevronRight } from 'lucide-react';
 
 interface PizzaBuilderModalProps {
   open: boolean;
@@ -167,8 +167,8 @@ export function PizzaBuilderModal({
 
   const handleClickSlot = (idx: number) => {
     if (idx < flavors.length) {
-      // Edit existing flavor — show observation
-      setEditingFlavorIdx(idx);
+      // Toggle expand to show ingredients + observation
+      setEditingFlavorIdx(prev => prev === idx ? null : idx);
       setFlavorObservation(flavors[idx].observation);
     } else {
       // Pick new flavor for this slot
@@ -330,46 +330,61 @@ export function PizzaBuilderModal({
                   const ingredients = getIngredients(flavor.product.id);
                   const price = getFlavorPrice(flavor.product.id);
                   return (
-                    <div key={idx} className="rounded-xl border border-border bg-secondary/20 overflow-hidden">
-                      <div className="flex items-center justify-between p-3">
+                    <div key={idx} className={`rounded-xl border overflow-hidden transition-all ${
+                      editingFlavorIdx === idx ? 'border-primary bg-primary/5' : 'border-border bg-secondary/20'
+                    }`}>
+                      <button
+                        onClick={() => { setEditingFlavorIdx(prev => prev === idx ? null : idx); setFlavorObservation(flavors[idx].observation); }}
+                        className="w-full flex items-center justify-between p-3 text-left"
+                      >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-sm">{flavor.product.name}</span>
                             {price > 0 && <span className="text-xs text-primary font-medium">R$ {price.toFixed(2)}</span>}
                           </div>
                           {flavor.removedIngredients.length > 0 && (
-                            <p className="text-xs text-destructive mt-0.5">SEM: {flavor.removedIngredients.join(', ')}</p>
+                            <p className="text-sm font-bold text-destructive mt-0.5">SEM: {flavor.removedIngredients.join(', ')}</p>
                           )}
-                          {flavor.observation && <p className="text-xs text-primary/70 mt-0.5">Obs: {flavor.observation}</p>}
+                          {flavor.observation && <p className="text-sm font-semibold text-foreground mt-0.5">Obs: {flavor.observation}</p>}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => { setEditingFlavorIdx(idx); setFlavorObservation(flavor.observation); }}
-                            className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                          </button>
+                          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${editingFlavorIdx === idx ? 'rotate-90' : ''}`} />
                           {flavors.length > 1 && (
-                            <button onClick={() => handleRemoveFlavor(idx)}
+                            <button onClick={(e) => { e.stopPropagation(); handleRemoveFlavor(idx); }}
                               className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
                               <X className="h-3.5 w-3.5 text-destructive" />
                             </button>
                           )}
                         </div>
-                      </div>
-                      {ingredients.length > 0 && (
-                        <div className="px-3 pb-3 flex flex-wrap gap-1.5">
-                          {ingredients.map(ing => {
-                            const isRemoved = flavor.removedIngredients.includes(ing.name);
-                            return (
-                              <button key={ing.id} onClick={() => handleToggleIngredient(idx, ing.name)}
-                                className={`text-xs px-2 py-1 rounded-full border transition-all ${
-                                  isRemoved
-                                    ? 'border-destructive/30 bg-destructive/10 text-destructive line-through'
-                                    : 'border-border bg-secondary/50 text-foreground'
-                                }`}>
-                                {ing.name}
-                              </button>
-                            );
-                          })}
+                      </button>
+                      {editingFlavorIdx === idx && (
+                        <div className="px-3 pb-3 space-y-2 animate-fade-in">
+                          {ingredients.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {ingredients.map(ing => {
+                                const isRemoved = flavor.removedIngredients.includes(ing.name);
+                                return (
+                                  <button key={ing.id} onClick={() => handleToggleIngredient(idx, ing.name)}
+                                    className={`text-xs px-2 py-1 rounded-full border transition-all ${
+                                      isRemoved
+                                        ? 'border-destructive bg-destructive/20 text-destructive font-bold line-through'
+                                        : 'border-border bg-secondary/50 text-foreground'
+                                    }`}>
+                                    {ing.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <Textarea
+                            placeholder="Observação deste sabor..."
+                            value={flavorObservation}
+                            onChange={e => setFlavorObservation(e.target.value)}
+                            className="bg-secondary/50 text-sm min-h-[60px]"
+                          />
+                          <Button size="sm" variant="outline" onClick={handleSaveFlavorObs} className="w-full">
+                            Salvar observação
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -462,19 +477,7 @@ export function PizzaBuilderModal({
           </DialogContent>
         </Dialog>
 
-        {/* Flavor Observation */}
-        <Dialog open={editingFlavorIdx !== null} onOpenChange={v => { if (!v) setEditingFlavorIdx(null); }}>
-          <DialogContent className="bg-card border-border max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="font-heading">
-                Observação - {editingFlavorIdx !== null ? flavors[editingFlavorIdx]?.product.name : ''}
-              </DialogTitle>
-            </DialogHeader>
-            <Textarea value={flavorObservation} onChange={e => setFlavorObservation(e.target.value)}
-              placeholder="Ex: bem assada, pouco queijo..." className="bg-secondary/50 resize-none" rows={3} />
-            <Button onClick={handleSaveFlavorObs} className="w-full">Salvar</Button>
-          </DialogContent>
-        </Dialog>
+        {/* Observation is now inline in flavor cards */}
       </SheetContent>
     </Sheet>
   );
