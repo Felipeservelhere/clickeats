@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Flame, BookOpen, MapPin, Grid3X3, Printer } from "lucide-react";
+import logo from "@/assets/logo.svg";
 import { NavLink } from "@/components/NavLink";
 import { PrinterSettings } from "@/components/PrinterSettings";
 import {
@@ -28,9 +29,11 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar collapsible="icon" className="border-r border-border bg-card">
-        <div className="p-3 flex items-center gap-2 border-b border-border">
-          <Flame className="h-6 w-6 text-primary shrink-0" />
-          {!collapsed && <span className="font-heading font-bold text-lg">PedidoFácil</span>}
+        <div className="p-3 flex items-center justify-center border-b border-border">
+          {collapsed
+            ? <img src={logo} alt="Logo" className="h-8 w-8 object-contain" />
+            : <img src={logo} alt="Logo" className="h-10 object-contain" />
+          }
         </div>
         <SidebarContent>
           <SidebarGroup>
