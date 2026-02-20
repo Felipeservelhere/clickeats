@@ -393,43 +393,45 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
               </div>
             )}
 
-            {/* Payment Method */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Forma de Pagamento</h4>
-              <div className="grid grid-cols-4 gap-2">
-                {paymentOptions.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setPaymentMethod(opt.value)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
-                      paymentMethod === opt.value
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
-                    }`}
-                  >
-                    {opt.icon}
-                    <span className="text-xs font-semibold">{opt.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {paymentMethod === 'dinheiro' && (
-                <div className="space-y-2 animate-fade-in">
-                  <Input
-                    type="number"
-                    placeholder="Troco para quanto? (R$)"
-                    value={changeFor}
-                    onChange={e => setChangeFor(e.target.value)}
-                    className="bg-secondary/50"
-                  />
-                  {changeFor && parseFloat(changeFor) > total && (
-                    <p className="text-sm font-semibold text-primary">
-                      Troco: R$ {changeAmount.toFixed(2)}
-                    </p>
-                  )}
+            {/* Payment Method - hide for mesa */}
+            {orderType !== 'mesa' && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Forma de Pagamento</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  {paymentOptions.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setPaymentMethod(opt.value)}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
+                        paymentMethod === opt.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
+                      }`}
+                    >
+                      {opt.icon}
+                      <span className="text-xs font-semibold">{opt.label}</span>
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
+
+                {paymentMethod === 'dinheiro' && (
+                  <div className="space-y-2 animate-fade-in">
+                    <Input
+                      type="number"
+                      placeholder="Troco para quanto? (R$)"
+                      value={changeFor}
+                      onChange={e => setChangeFor(e.target.value)}
+                      className="bg-secondary/50"
+                    />
+                    {changeFor && parseFloat(changeFor) > total && (
+                      <p className="text-sm font-semibold text-primary">
+                        Troco: R$ {changeAmount.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Observation */}
             <div className="space-y-3">
