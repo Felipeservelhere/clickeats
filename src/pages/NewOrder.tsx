@@ -147,7 +147,7 @@ const NewOrder = () => {
         const updatedItems = [...existing.items, ...order.items];
         const updatedSubtotal = existing.subtotal + order.subtotal;
         const updatedTotal = updatedSubtotal + existing.deliveryFee;
-        updateOrder(addToOrderId, { items: updatedItems, subtotal: updatedSubtotal, total: updatedTotal });
+        await updateOrder(addToOrderId, { items: updatedItems, subtotal: updatedSubtotal, total: updatedTotal });
         await autoQZPrint({ ...existing, items: updatedItems, subtotal: updatedSubtotal, total: updatedTotal }, order.items);
         setShowCheckout(false);
         setCart([]);
@@ -160,7 +160,7 @@ const NewOrder = () => {
     if (order.type === 'mesa' && order.tableReference) {
       const existing = getActiveTableOrder(order.tableReference);
       if (existing) {
-        const updated = addItemsToTableOrder(order.tableReference, order.items, order.subtotal);
+        const updated = await addItemsToTableOrder(order.tableReference, order.items, order.subtotal);
         if (updated) {
           await autoQZPrint(updated, order.items);
           setShowCheckout(false);
@@ -170,7 +170,7 @@ const NewOrder = () => {
         }
       }
     }
-    addOrder(order);
+    await addOrder(order);
     await autoQZPrint(order);
     setShowCheckout(false);
 
