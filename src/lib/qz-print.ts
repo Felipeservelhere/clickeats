@@ -110,22 +110,25 @@ export function savePrinter(name: string) {
 
 const RECEIPT_STYLE = `
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Courier New', monospace; width: 280px; color: #000; background: #fff; padding: 8px; }
-  .center { text-align: center; }
-  .bold { font-weight: bold; }
-  .big { font-size: 18px; font-weight: bold; }
-  .huge { font-size: 24px; font-weight: bold; }
-  .small { font-size: 11px; }
-  .line { border-top: 1px dashed #000; margin: 6px 0; }
-  .line-solid { border-top: 2px solid #000; margin: 6px 0; }
-  .row { display: flex; justify-content: space-between; padding: 1px 0; }
-  .item { padding: 4px 0; }
-  .item-name { font-weight: bold; font-size: 13px; }
-  .item-addon { font-size: 11px; color: #444; padding-left: 12px; }
-  .item-obs { font-size: 11px; color: #000; padding-left: 12px; font-weight: bold; }
-  .total-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; padding: 4px 0; }
-  .footer { text-align: center; font-size: 10px; color: #666; margin-top: 8px; }
+  body {
+    font-family: monospace;
+    width: 320px;
+    margin: 0 auto;
+    text-align: center;
+    color: #000;
+    background: #fff;
+    padding: 0;
+  }
+  .tipo { font-size: 22px; font-weight: bold; }
+  .data { font-size: 13px; margin-bottom: 8px; }
+  .info { font-size: 14px; margin-bottom: 8px; }
+  .grupo { background: #000; color: #fff; padding: 4px 0; margin: 10px 0 6px; font-weight: bold; }
+  .item { margin: 4px 0; font-size: 14px; }
+  .adicional { font-size: 13px; opacity: 0.8; }
+  .obs { font-size: 13px; font-weight: bold; }
+  .linha { border-top: 1px solid #000; margin: 8px 0; }
+  .total { font-weight: bold; font-size: 18px; }
+  .subtotal { font-size: 14px; }
 </style>
 `;
 
@@ -146,51 +149,63 @@ export function buildKitchenReceipt(order: {
   tableReference?: string;
   items: Array<{
     quantity: number;
-    product: { name: string };
+    product: { name: string; categoryId?: string };
     selectedAddons: Array<{ name: string }>;
     observation?: string;
   }>;
-}): string {
-  const typeLabel = order.type === 'mesa' ? 'MESA' : order.type === 'entrega' ? 'ENTREGA' : 'RETIRADA';
+}, categories?: Array<{ id: string; name: string }>): string {
+  const typeLabel = order.type === 'mesa'
+    ? `MESA #${order.tableReference || order.tableNumber}`
+    : order.type === 'entrega' ? `ENTREGA #${order.number}` : `RETIRADA #${order.number}`;
   const { date, time } = formatDateTime(order.createdAt);
-  const totalItems = order.items.reduce((s, i) => s + i.quantity, 0);
 
-  let html = `<html><head>${RECEIPT_STYLE}</head><body>`;
-  html += `<div class="line-solid"></div>`;
-  html += `<div class="center huge">★ COZINHA ★</div>`;
-  html += `<div class="line-solid"></div>`;
-  html += `<div class="center huge" style="margin:8px 0">${typeLabel} #${order.number}</div>`;
-  html += `<div class="center small">${date} ${time}</div>`;
+  let html = `<html><head>${RECEIPT_STYLE}</head><body><div class="ticket">`;
+  html += `<div class="tipo">${typeLabel}</div>`;
+  html += `<div class="data">${date} ${time}</div>`;
 
   if (order.customerName) {
-    html += `<div class="center bold" style="margin-top:4px">${order.customerName}</div>`;
-  }
-  if (order.type === 'mesa' && order.tableReference) {
-    html += `<div class="center bold">Mesa: ${order.tableReference}</div>`;
+    html += `<div class="info"><b>Cliente</b><br>${order.customerName}</div>`;
   }
 
-  html += `<div class="line-solid"></div>`;
-  html += `<div class="center bold small" style="margin:2px 0">ITENS DO PEDIDO</div>`;
-  html += `<div class="line"></div>`;
+  html += `<div class="linha"></div>`;
 
-  for (const item of order.items) {
-    html += `<div class="item">`;
-    html += `<div class="item-name">${item.quantity}x  ${item.product.name.toUpperCase()}</div>`;
-    if (item.selectedAddons.length > 0) {
-      html += `<div class="item-addon">+ ${item.selectedAddons.map(a => a.name).join(', ')}</div>`;
+  // Group items by category
+  const grouped = groupItemsByCategory(order.items, categories);
+  for (const group of grouped) {
+    html += `<div class="grupo">${group.categoryName}</div>`;
+    for (const item of group.items) {
+      html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()}</div>`;
+      if (item.selectedAddons.length > 0) {
+        for (const addon of item.selectedAddons) {
+          html += `<div class="adicional">+ ${addon.name}</div>`;
+        }
+      }
+      if (item.observation) {
+        html += `<div class="obs">OBS: ${item.observation}</div>`;
+      }
     }
-    if (item.observation) {
-      html += `<div class="item-obs">⚠ OBS: ${item.observation}</div>`;
-    }
-    html += `</div>`;
   }
 
-  html += `<div class="line-solid"></div>`;
-  html += `<div class="center bold">${totalItems} ITEM(NS) NO TOTAL</div>`;
-  html += `<div class="line-solid"></div>`;
-  html += `</body></html>`;
-
+  html += `</div></body></html>`;
   return html;
+}
+
+function groupItemsByCategory(
+  items: Array<{ quantity: number; product: { name: string; categoryId?: string; price?: number }; selectedAddons: Array<{ name: string; price?: number }>; observation?: string }>,
+  categories?: Array<{ id: string; name: string }>
+) {
+  const catMap = new Map<string, typeof items>();
+  for (const item of items) {
+    const catId = item.product.categoryId || 'outros';
+    if (!catMap.has(catId)) catMap.set(catId, []);
+    catMap.get(catId)!.push(item);
+  }
+  const groups: Array<{ categoryName: string; items: typeof items }> = [];
+  for (const [catId, catItems] of catMap) {
+    const cat = categories?.find(c => c.id === catId);
+    groups.push({ categoryName: cat?.name?.toUpperCase() || 'OUTROS', items: catItems });
+  }
+  return groups;
 }
 
 export function buildDeliveryReceipt(order: {
@@ -211,76 +226,74 @@ export function buildDeliveryReceipt(order: {
   total: number;
   items: Array<{
     quantity: number;
-    product: { name: string; price: number };
+    product: { name: string; price: number; categoryId?: string };
     selectedAddons: Array<{ name: string; price: number }>;
     observation?: string;
   }>;
-}): string {
-  const typeLabel = order.type === 'mesa' ? 'MESA' : order.type === 'entrega' ? 'ENTREGA' : 'RETIRADA';
+}, categories?: Array<{ id: string; name: string }>): string {
+  const typeLabel = order.type === 'mesa'
+    ? `MESA #${order.tableReference || order.tableNumber}`
+    : order.type === 'entrega' ? `ENTREGA #${order.number}` : `RETIRADA #${order.number}`;
   const { date, time } = formatDateTime(order.createdAt);
 
-  let html = `<html><head>${RECEIPT_STYLE}</head><body>`;
-  html += `<div class="line-solid"></div>`;
-  html += `<div class="center huge">${typeLabel} #${order.number}</div>`;
-  html += `<div class="center small">${date} ${time}</div>`;
+  let html = `<html><head>${RECEIPT_STYLE}</head><body><div class="ticket">`;
+  html += `<div class="tipo">${typeLabel}</div>`;
+  html += `<div class="data">${date} ${time}</div>`;
 
   if (order.customerName) {
-    html += `<div class="center bold" style="margin-top:4px">${order.customerName}</div>`;
+    html += `<div class="info"><b>Cliente</b><br>${order.customerName}</div>`;
   }
   if (order.customerPhone) {
-    html += `<div class="center small">Tel: ${order.customerPhone}</div>`;
+    html += `<div class="info">Tel: ${order.customerPhone}</div>`;
   }
 
-  html += `<div class="line-solid"></div>`;
-
-  // Address
   if (order.type === 'entrega') {
     if (order.address) {
-      html += `<div class="bold small">ENDEREÇO:</div>`;
-      html += `<div class="small">${order.address}${order.addressNumber ? ', ' + order.addressNumber : ''}</div>`;
+      html += `<div class="info"><b>Endereço</b><br>${order.address}${order.addressNumber ? ', ' + order.addressNumber : ''}`;
+      if (order.neighborhood) html += ` — ${order.neighborhood.name}`;
+      html += `</div>`;
     }
-    if (order.reference) html += `<div class="small">Ref: ${order.reference}</div>`;
-    if (order.neighborhood) html += `<div class="small">Bairro: ${order.neighborhood.name}</div>`;
-    html += `<div class="line"></div>`;
+    if (order.reference) html += `<div class="info">Ref: ${order.reference}</div>`;
   }
 
-  // Items
-  html += `<div class="center bold small">ITENS</div>`;
-  html += `<div class="line"></div>`;
+  html += `<div class="linha"></div>`;
 
-  for (const item of order.items) {
-    const itemTotal = (item.product.price + item.selectedAddons.reduce((a, ad) => a + ad.price, 0)) * item.quantity;
-    html += `<div class="item">`;
-    html += `<div class="row"><span class="item-name">${item.quantity}x ${item.product.name}</span><span class="bold">R$${itemTotal.toFixed(2)}</span></div>`;
-    if (item.selectedAddons.length > 0) {
-      html += `<div class="item-addon">+ ${item.selectedAddons.map(a => a.name).join(', ')}</div>`;
+  // Group items by category
+  const grouped = groupItemsByCategory(order.items, categories);
+  for (const group of grouped) {
+    html += `<div class="grupo">${group.categoryName}</div>`;
+    for (const item of group.items) {
+      const itemTotal = ((item.product as any).price + item.selectedAddons.reduce((a: number, ad: any) => a + (ad.price || 0), 0)) * item.quantity;
+      if (order.type === 'mesa') {
+        html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()}</div>`;
+      } else {
+        html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
+      }
+      if (item.selectedAddons.length > 0) {
+        for (const addon of item.selectedAddons) {
+          html += `<div class="adicional">+ ${addon.name}</div>`;
+        }
+      }
+      if (item.observation) {
+        html += `<div class="obs">OBS: ${item.observation}</div>`;
+      }
     }
-    if (item.observation) {
-      html += `<div class="item-obs">⚠ OBS: ${item.observation}</div>`;
-    }
-    html += `</div>`;
   }
 
-  html += `<div class="line"></div>`;
+  html += `<div class="linha"></div>`;
 
   if (order.observation) {
-    html += `<div class="bold small">OBS GERAL:</div>`;
-    html += `<div class="small">${order.observation}</div>`;
-    html += `<div class="line"></div>`;
+    html += `<div class="info"><b>Obs:</b> ${order.observation}</div>`;
+    html += `<div class="linha"></div>`;
   }
 
-  // Totals
-  html += `<div class="row small"><span>Subtotal</span><span>R$${order.subtotal.toFixed(2)}</span></div>`;
+  html += `<div class="subtotal">Subtotal ${order.subtotal.toFixed(2).replace('.', ',')}</div>`;
   if (order.deliveryFee > 0) {
-    html += `<div class="row small"><span>Taxa entrega</span><span>R$${order.deliveryFee.toFixed(2)}</span></div>`;
+    html += `<div class="subtotal">Taxa ${order.deliveryFee.toFixed(2).replace('.', ',')}</div>`;
   }
-  html += `<div class="line-solid"></div>`;
-  html += `<div class="total-row"><span>TOTAL</span><span>R$${order.total.toFixed(2)}</span></div>`;
-  html += `<div class="line-solid"></div>`;
+  html += `<div class="total">TOTAL ${order.total.toFixed(2).replace('.', ',')}</div>`;
 
-  html += `<div class="footer">Obrigado pela preferência!</div>`;
-  html += `</body></html>`;
-
+  html += `</div></body></html>`;
   return html;
 }
 
