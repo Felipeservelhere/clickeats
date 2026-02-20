@@ -125,7 +125,7 @@ const RECEIPT_STYLE = `
     print-color-adjust: exact;
   }
   .logo { text-align: center; margin-bottom: 4px; }
-  .logo img { max-width: 180px; margin: 0 auto; filter: invert(1) brightness(0); }
+  .logo img { max-width: 180px; margin: 0 auto; filter: invert(1); }
   .tipo { font-size: 20px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
   .data { font-size: 14px; font-weight: bold; margin-bottom: 2px; text-align: center; }
   .info { font-size: 16px; font-weight: bold; margin-bottom: 2px; text-align: left; }
