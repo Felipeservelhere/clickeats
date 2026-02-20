@@ -5,6 +5,7 @@ import { useTables } from '@/hooks/useTables';
 import { OrderCard } from '@/components/order/OrderCard';
 import { PrintModal } from '@/components/order/PrintModal';
 import { TableDetailSheet } from '@/components/order/TableDetailSheet';
+import { OrderDetailSheet } from '@/components/order/OrderDetailSheet';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Order, OrderType } from '@/types/order';
@@ -34,7 +35,7 @@ const Index = () => {
   const [showPrint, setShowPrint] = useState(false);
   const [completeOrder, setCompleteOrder] = useState<Order | null>(null);
   const [tableDetailOrder, setTableDetailOrder] = useState<Order | null>(null);
-
+  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.type === filter);
   const activeOrders = filteredOrders.filter(o => o.status !== 'completed');
   const completedOrders = filteredOrders.filter(o => o.status === 'completed');
@@ -73,7 +74,8 @@ const Index = () => {
   const handleOrderClick = (order: Order) => {
     if (order.type === 'mesa') {
       setTableDetailOrder(order);
-      return;
+    } else {
+      setDetailOrder(order);
     }
   };
 
@@ -196,7 +198,7 @@ const Index = () => {
               <OrderCard
                 key={order.id}
                 order={order}
-                onClick={order.type === 'mesa' ? () => handleOrderClick(order) : undefined}
+                onClick={() => handleOrderClick(order)}
                 onKitchenPrint={() => handleKitchenPrint(order)}
                 onDeliveryPrint={() => handleDeliveryPrint(order)}
                 onComplete={() => handleComplete(order)}
@@ -233,6 +235,16 @@ const Index = () => {
 
       {/* Table Detail */}
       <TableDetailSheet order={tableDetailOrder} open={!!tableDetailOrder} onClose={() => setTableDetailOrder(null)} />
+
+      {/* Order Detail (entrega/retirada) */}
+      <OrderDetailSheet
+        order={detailOrder}
+        open={!!detailOrder}
+        onClose={() => setDetailOrder(null)}
+        onKitchenPrint={handleKitchenPrint}
+        onDeliveryPrint={handleDeliveryPrint}
+        onComplete={handleComplete}
+      />
 
       {/* Notify Modal */}
       <Dialog open={!!completeOrder} onOpenChange={(v) => !v && setCompleteOrder(null)}>
