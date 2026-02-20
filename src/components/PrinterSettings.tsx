@@ -103,11 +103,14 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
           </div>
 
           {/* QZ Tray trust tip */}
-          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-            <p className="text-xs text-primary font-semibold mb-1">💡 Dica: Impressão automática</p>
-            <p className="text-xs text-muted-foreground">
-              Quando aparecer o popup do QZ Tray pedindo permissão, marque a opção <strong>"Remember this decision"</strong> e clique em <strong>"Allow"</strong>. Assim ele não perguntará novamente.
-            </p>
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-2">
+            <p className="text-xs text-primary font-semibold">💡 Como parar o popup do QZ Tray:</p>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Abra a pasta do QZ Tray no computador</li>
+              <li>Vá em <strong>Arquivo → Propriedades avançadas</strong> ou encontre o arquivo <code className="bg-secondary px-1 rounded">override.crt</code></li>
+              <li>Ou: No popup do QZ Tray, <strong>NÃO</strong> marque "Remember" — apenas clique <strong>"Allow"</strong> cada vez</li>
+              <li>Para nunca mais perguntar: adicione o site em <strong>QZ Tray → Avançado → Sites Confiáveis</strong></li>
+            </ol>
           </div>
 
           {/* Certificate upload */}
