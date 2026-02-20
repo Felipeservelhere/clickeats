@@ -17,12 +17,11 @@ function loadCertificate() {
       resolve(cert);
     });
   }
-  // For unsigned/development, skip signing
+  // Skip signature validation (no private key needed for trusted certs)
   qz.security.setSignatureAlgorithm('SHA512');
-  qz.security.setSignaturePromise((toSign) => {
-    return (resolve) => {
-      // Without private key, resolve with empty (works for unsigned certs / dev mode)
-      resolve('');
+  qz.security.setSignaturePromise(() => {
+    return (resolve: any) => {
+      resolve();
     };
   });
 }

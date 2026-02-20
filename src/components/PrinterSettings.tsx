@@ -7,7 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { getPrinters, savePrinter, getSavedPrinter, setCertificate, connectQZ, printRaw } from '@/lib/qz-print';
 import { toast } from 'sonner';
-import { Printer, Settings2, Check, Wifi, WifiOff, FileText } from 'lucide-react';
+import { Printer, Settings2, Check, Wifi, WifiOff, FileText, Upload } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 interface PrinterSettingsProps {
   open: boolean;
@@ -44,12 +45,20 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
     }
   };
 
-  const handleSaveCert = () => {
-    if (certText.trim()) {
-      setCertificate(certText.trim());
-      toast.success('Certificado salvo');
-      loadPrinters(); // Reconnect with new cert
-    }
+  const handleCertUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      if (text?.trim()) {
+        setCertificate(text.trim());
+        setCertText(text.trim());
+        toast.success('Certificado carregado com sucesso!');
+        loadPrinters();
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleAutoChange = (val: boolean) => {
@@ -101,19 +110,19 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
             </p>
           </div>
 
-          {/* Certificate */}
+          {/* Certificate upload */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Certificado (qz.crt)</Label>
-            <Textarea
-              value={certText}
-              onChange={e => setCertText(e.target.value)}
-              placeholder="Cole o conteúdo do arquivo qz.crt aqui..."
-              className="bg-secondary/50 resize-none font-mono text-xs"
-              rows={4}
-            />
-            <Button variant="outline" size="sm" onClick={handleSaveCert} disabled={!certText.trim()}>
-              Salvar Certificado
-            </Button>
+            <div className="flex items-center gap-2">
+              <label className="flex-1 cursor-pointer">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{certText ? 'Certificado carregado ✓' : 'Fazer upload do qz.crt'}</span>
+                </div>
+                <Input type="file" accept=".crt,.pem,.txt" className="hidden" onChange={handleCertUpload} />
+              </label>
+            </div>
+            {certText && <p className="text-xs text-success">Certificado configurado</p>}
           </div>
 
           {/* Printer selection */}
