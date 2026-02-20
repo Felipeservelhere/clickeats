@@ -106,14 +106,10 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
     if (customer.phone) setCustomerPhone(customer.phone);
   };
 
-  const handleCreateNewCustomer = async (name: string) => {
-    try {
-      const customer = await createCustomer.mutateAsync({ name, phone: customerPhone || undefined });
-      setSelectedCustomer(customer);
-      toast.success(`Cliente "${name}" cadastrado!`);
-    } catch {
-      toast.error('Erro ao cadastrar cliente');
-    }
+  const handleCreateNewCustomer = (name: string) => {
+    // Don't create customer now - just set the name, customer will be created on finalize
+    setCustomerName(name);
+    setSelectedCustomer(null);
   };
 
   const handleSelectAddress = (addr: CustomerAddress) => {
