@@ -124,11 +124,11 @@ const RECEIPT_STYLE = `
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .logo { text-align: center; margin-bottom: 8px; }
-  .logo img { max-width: 200px; margin: 0 auto; filter: invert(1); }
-  .tipo { font-size: 32px; font-weight: 900; text-align: center; letter-spacing: 1px; }
-  .data { font-size: 18px; font-weight: bold; margin-bottom: 8px; text-align: center; }
-  .info { font-size: 18px; font-weight: bold; margin-bottom: 8px; text-align: center; }
+  .logo { text-align: center; margin-bottom: 4px; }
+  .logo img { max-width: 180px; margin: 0 auto; filter: invert(1) brightness(0); }
+  .tipo { font-size: 24px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
+  .data { font-size: 14px; font-weight: bold; margin-bottom: 4px; text-align: center; }
+  .info { font-size: 16px; font-weight: bold; margin-bottom: 4px; text-align: center; }
   .grupo { background: #000; color: #fff; padding: 6px 8px; margin: 10px 0 6px; font-weight: 900; font-size: 18px; text-align: center; }
   .item { margin: 4px 0; font-size: 18px; font-weight: 900; padding-left: 4px; word-wrap: break-word; overflow-wrap: break-word; }
   .adicional { font-size: 16px; font-weight: bold; padding-left: 20px; word-wrap: break-word; }
@@ -222,7 +222,7 @@ export function buildKitchenReceipt(order: {
   html += `<div class="data">${date} ${time}</div>`;
 
   if (order.customerName) {
-    html += `<div class="info"><b>Cliente</b><br>${order.customerName}</div>`;
+    html += `<div class="info">Cliente: ${order.customerName}</div>`;
   }
 
   html += `<div class="linha"></div>`;
@@ -301,7 +301,7 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="data">${date} ${time}</div>`;
 
   if (order.customerName) {
-    html += `<div class="info"><b>Cliente</b><br>${order.customerName}</div>`;
+    html += `<div class="info">Cliente: ${order.customerName}</div>`;
   }
   if (order.customerPhone) {
     html += `<div class="info">Tel: ${order.customerPhone}</div>`;
