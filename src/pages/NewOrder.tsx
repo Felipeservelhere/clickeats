@@ -2,10 +2,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCategories } from '@/hooks/useCategories';
 import { useProducts } from '@/hooks/useProducts';
+import { usePizzaSizes, usePizzaBorders, useProductPizzaPrices, useProductIngredients } from '@/hooks/usePizza';
 import { CartItem, Product, Order, Addon } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
 import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter } from '@/lib/qz-print';
 import { AddonsModal } from '@/components/order/AddonsModal';
+import { PizzaBuilderModal } from '@/components/order/PizzaBuilderModal';
 import { CartBar } from '@/components/order/CartBar';
 import { CheckoutSheet } from '@/components/order/CheckoutSheet';
 
@@ -23,9 +25,13 @@ const NewOrder = () => {
   const { orders, addOrder, addItemsToTableOrder, getActiveTableOrder, updateOrder } = useOrders();
   const { data: dbCategories = [] } = useCategories();
   const { data: dbProducts = [] } = useProducts();
+  const { data: pizzaSizes = [] } = usePizzaSizes();
+  const { data: pizzaBorders = [] } = usePizzaBorders();
+  const { data: pizzaPrices = [] } = useProductPizzaPrices();
+  const { data: pizzaIngredients = [] } = useProductIngredients();
 
   // Map DB data to component format
-  const categories = dbCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon }));
+  const categories = dbCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon, type: c.type }));
   const products: Product[] = dbProducts.map(p => {
     const cat = dbCategories.find(c => c.id === p.category_id);
     return {
@@ -39,9 +45,15 @@ const NewOrder = () => {
   });
   const sortedProducts = [...products].sort((a, b) => a.price - b.price);
 
+  const isPizzaCategory = (catId: string) => {
+    const cat = dbCategories.find(c => c.id === catId);
+    return cat?.type === 'pizza';
+  };
+
   const [activeCategory, setActiveCategory] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [addonsProduct, setAddonsProduct] = useState<Product | null>(null);
+  const [pizzaBuilderProduct, setPizzaBuilderProduct] = useState<Product | null>(null);
   const [editingItem, setEditingItem] = useState<CartItem | undefined>();
   const [showCheckout, setShowCheckout] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -94,7 +106,14 @@ const NewOrder = () => {
     setTimeout(() => setIsScrolling(false), 600);
   };
 
-  const handleProductClick = (product: Product) => { setEditingItem(undefined); setAddonsProduct(product); };
+  const handleProductClick = (product: Product) => {
+    setEditingItem(undefined);
+    if (isPizzaCategory(product.categoryId)) {
+      setPizzaBuilderProduct(product);
+    } else {
+      setAddonsProduct(product);
+    }
+  };
   const handleAddToCart = (item: CartItem) => {
     if (editingItem) setCart(prev => prev.map(i => i.cartId === editingItem.cartId ? item : i));
     else setCart(prev => [...prev, item]);
@@ -231,6 +250,17 @@ const NewOrder = () => {
       </div>
 
       <AddonsModal product={addonsProduct} existingItem={editingItem} open={!!addonsProduct} onClose={() => { setAddonsProduct(null); setEditingItem(undefined); }} onConfirm={handleAddToCart} />
+      <PizzaBuilderModal
+        open={!!pizzaBuilderProduct}
+        onClose={() => setPizzaBuilderProduct(null)}
+        initialProduct={pizzaBuilderProduct}
+        allPizzaProducts={sortedProducts.filter(p => isPizzaCategory(p.categoryId))}
+        pizzaSizes={pizzaSizes}
+        pizzaBorders={pizzaBorders}
+        pizzaPrices={pizzaPrices}
+        productIngredients={pizzaIngredients}
+        onConfirm={(item) => { setCart(prev => [...prev, item]); setPizzaBuilderProduct(null); }}
+      />
       <CartBar items={cart} onEditItem={handleEditItem} onRemoveItem={handleRemoveItem} onCheckout={() => setShowCheckout(true)} />
       <CheckoutSheet open={showCheckout} onClose={() => setShowCheckout(false)} items={cart} onFinalize={handleFinalize} forcedTableNumber={forcedTableNumber} />
     </div>
