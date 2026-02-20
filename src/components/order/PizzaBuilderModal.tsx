@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { DbProduct } from '@/hooks/useProducts';
 import { DbPizzaSize, DbPizzaBorder, DbProductPizzaPrice, DbProductIngredient } from '@/hooks/usePizza';
 import { CartItem, Product, Addon, PizzaDetail } from '@/types/order';
-import { Minus, Plus, X, ChevronRight } from 'lucide-react';
+import { Minus, Plus, Pencil, X, ChevronRight } from 'lucide-react';
 
 interface PizzaBuilderModalProps {
   open: boolean;
@@ -334,11 +334,9 @@ export function PizzaBuilderModal({
                   const ingredients = getIngredients(flavor.product.id);
                   const price = getFlavorPrice(flavor.product.id);
                   return (
-                    <div key={idx} className={`rounded-xl border overflow-hidden transition-all ${
-                      editingFlavorIdx === idx ? 'border-primary bg-primary/5' : 'border-border bg-secondary/20'
-                    }`}>
+                    <div key={idx} className="rounded-xl border border-border bg-secondary/20 overflow-hidden">
                       <button
-                        onClick={() => { setEditingFlavorIdx(prev => prev === idx ? null : idx); setFlavorObservation(flavors[idx].observation); }}
+                        onClick={() => { setEditingFlavorIdx(idx); setFlavorObservation(flavors[idx].observation); }}
                         className="w-full flex items-center justify-between p-3 text-left"
                       >
                         <div className="flex-1 min-w-0">
@@ -352,7 +350,7 @@ export function PizzaBuilderModal({
                           {flavor.observation && <p className="text-sm font-semibold text-foreground mt-0.5">Obs: {flavor.observation}</p>}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${editingFlavorIdx === idx ? 'rotate-90' : ''}`} />
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           {flavors.length > 1 && (
                             <button onClick={(e) => { e.stopPropagation(); handleRemoveFlavor(idx); }}
                               className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
@@ -361,36 +359,6 @@ export function PizzaBuilderModal({
                           )}
                         </div>
                       </button>
-                      {editingFlavorIdx === idx && (
-                        <div className="px-3 pb-3 space-y-2 animate-fade-in">
-                          {ingredients.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {ingredients.map(ing => {
-                                const isRemoved = flavor.removedIngredients.includes(ing.name);
-                                return (
-                                  <button key={ing.id} onClick={() => handleToggleIngredient(idx, ing.name)}
-                                    className={`text-xs px-2 py-1 rounded-full border transition-all ${
-                                      isRemoved
-                                        ? 'border-destructive bg-destructive/20 text-destructive font-bold line-through'
-                                        : 'border-border bg-secondary/50 text-foreground'
-                                    }`}>
-                                    {ing.name}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                          <Textarea
-                            placeholder="Observação deste sabor..."
-                            value={flavorObservation}
-                            onChange={e => setFlavorObservation(e.target.value)}
-                            className="bg-secondary/50 text-sm min-h-[60px]"
-                          />
-                          <Button size="sm" variant="outline" onClick={handleSaveFlavorObs} className="w-full">
-                            Salvar observação
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -481,7 +449,56 @@ export function PizzaBuilderModal({
           </DialogContent>
         </Dialog>
 
-        {/* Observation is now inline in flavor cards */}
+        {/* Flavor Edit Modal - ingredients + observation */}
+        <Dialog open={editingFlavorIdx !== null} onOpenChange={v => { if (!v) { handleSaveFlavorObs(); setEditingFlavorIdx(null); } }}>
+          <DialogContent className="bg-card border-border max-w-sm max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-heading">
+                ✏️ {editingFlavorIdx !== null ? flavors[editingFlavorIdx]?.product.name : ''}
+              </DialogTitle>
+            </DialogHeader>
+            {editingFlavorIdx !== null && flavors[editingFlavorIdx] && (() => {
+              const flavor = flavors[editingFlavorIdx];
+              const ingredients = getIngredients(flavor.product.id);
+              return (
+                <div className="space-y-4">
+                  {ingredients.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Remover ingredientes</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {ingredients.map(ing => {
+                          const isRemoved = flavor.removedIngredients.includes(ing.name);
+                          return (
+                            <button key={ing.id} onClick={() => handleToggleIngredient(editingFlavorIdx, ing.name)}
+                              className={`text-sm px-3 py-1.5 rounded-full border transition-all ${
+                                isRemoved
+                                  ? 'border-destructive bg-destructive/20 text-destructive font-bold line-through'
+                                  : 'border-border bg-secondary/50 text-foreground'
+                              }`}>
+                              {ing.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Observação</h4>
+                    <Textarea
+                      value={flavorObservation}
+                      onChange={e => setFlavorObservation(e.target.value)}
+                      placeholder="Ex: bem assada, pouco queijo..."
+                      className="bg-secondary/50 resize-none"
+                      rows={3}
+                    />
+                  </div>
+                  <Button onClick={() => { handleSaveFlavorObs(); setEditingFlavorIdx(null); }} className="w-full">
+                    Confirmar
+                  </Button>
+                </div>
+              );
+            })()}</DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   );
