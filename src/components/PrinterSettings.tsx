@@ -93,6 +93,14 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
             </Button>
           </div>
 
+          {/* QZ Tray trust tip */}
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <p className="text-xs text-primary font-semibold mb-1">💡 Dica: Impressão automática</p>
+            <p className="text-xs text-muted-foreground">
+              Quando aparecer o popup do QZ Tray pedindo permissão, marque a opção <strong>"Remember this decision"</strong> e clique em <strong>"Allow"</strong>. Assim ele não perguntará novamente.
+            </p>
+          </div>
+
           {/* Certificate */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Certificado (qz.crt)</Label>
@@ -145,27 +153,29 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
             className="w-full gap-2"
             disabled={!selectedPrinter || !connected}
             onClick={async () => {
-              const ESC = '\x1B';
-              const GS = '\x1D';
-              const data = [
-                ESC + '@',
-                ESC + 'a' + '\x01',
-                ESC + 'E' + '\x01',
-                GS + '!' + '\x11',
-                'TESTE DE IMPRESSAO\n',
-                GS + '!' + '\x00',
-                ESC + 'E' + '\x00',
-                '--------------------------------\n',
-                'Impressora: ' + selectedPrinter + '\n',
-                'Data: ' + new Date().toLocaleString('pt-BR') + '\n',
-                '--------------------------------\n',
-                ESC + 'a' + '\x01',
-                'Se voce esta lendo isso,\n',
-                'a impressora esta funcionando!\n',
-                '--------------------------------\n',
-                '\n\n\n',
-                GS + 'V' + '\x00',
-              ].join('');
+              const data = `<html><head><style>
+                * { margin: 0; padding: 0; }
+                body { font-family: 'Courier New', monospace; width: 280px; padding: 8px; }
+                .center { text-align: center; }
+                .line { border-top: 2px solid #000; margin: 8px 0; }
+              </style></head><body>
+                <div class="line"></div>
+                <div class="center" style="font-size:24px;font-weight:bold">★ TESTE ★</div>
+                <div class="line"></div>
+                <div class="center" style="margin:8px 0">
+                  <div style="font-weight:bold">Impressora:</div>
+                  <div>${selectedPrinter}</div>
+                </div>
+                <div class="center" style="margin:8px 0">
+                  <div style="font-weight:bold">Data/Hora:</div>
+                  <div>${new Date().toLocaleString('pt-BR')}</div>
+                </div>
+                <div class="line"></div>
+                <div class="center" style="font-size:14px;font-weight:bold;margin:8px 0">
+                  ✅ Impressora funcionando!
+                </div>
+                <div class="line"></div>
+              </body></html>`;
               const ok = await printRaw(data, selectedPrinter);
               if (ok) toast.success('Teste impresso com sucesso!');
               else toast.error('Falha no teste. Verifique o QZ Tray.');
