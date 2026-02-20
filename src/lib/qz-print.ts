@@ -169,8 +169,9 @@ interface ReceiptItem {
 function renderPizzaItemKitchen(item: ReceiptItem): string {
   const pd = item.pizzaDetail!;
   let html = `<div class="item">${item.quantity}X PIZZA ${pd.sizeName.toUpperCase()}</div>`;
+  const total = pd.flavors.length;
   pd.flavors.forEach((f, idx) => {
-    html += `<div class="sabor">SABOR ${idx + 1}: ${f.name.toUpperCase()}</div>`;
+    html += `<div class="sabor">${idx + 1}/${total} ${f.name.toUpperCase()}</div>`;
     f.removedIngredients.forEach(ing => {
       html += `<div class="sem">S/ ${ing.toUpperCase()}</div>`;
     });
@@ -192,8 +193,9 @@ function renderPizzaItemDelivery(item: ReceiptItem): string {
   const pd = item.pizzaDetail!;
   const itemTotal = ((item.product.price || 0) + item.selectedAddons.reduce((a, ad) => a + ((ad as any).price || 0), 0)) * item.quantity;
   let html = `<div class="item">${item.quantity}X PIZZA ${pd.sizeName.toUpperCase()} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
+  const total = pd.flavors.length;
   pd.flavors.forEach((f, idx) => {
-    html += `<div class="sabor">SABOR ${idx + 1}: ${f.name.toUpperCase()}</div>`;
+    html += `<div class="sabor">${idx + 1}/${total} ${f.name.toUpperCase()}</div>`;
     f.removedIngredients.forEach(ing => {
       html += `<div class="sem">S/ ${ing.toUpperCase()}</div>`;
     });
