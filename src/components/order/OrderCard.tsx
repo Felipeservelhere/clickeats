@@ -48,16 +48,16 @@ export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete }
 
       {/* Actions */}
       {!isCompleted && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-          <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={onKitchenPrint}>
-            <ChefHat className="h-4 w-4" /> Cozinha
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5 h-9 text-xs" onClick={onKitchenPrint}>
+            <ChefHat className="h-3.5 w-3.5" /> Cozinha
           </Button>
           {order.type !== 'mesa' && (
-            <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={onDeliveryPrint}>
-              <Printer className="h-4 w-4" /> Resumo
+            <Button variant="outline" size="sm" className="flex-1 gap-1.5 h-9 text-xs" onClick={onDeliveryPrint}>
+              <Printer className="h-3.5 w-3.5" /> Resumo
             </Button>
           )}
-          <Button variant="outline" size="sm" className="gap-1.5 bg-success/10 hover:bg-success/20 border-success/30 text-success" onClick={onComplete}>
+          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 bg-success/10 hover:bg-success/20 border-success/30 text-success" onClick={onComplete}>
             <Check className="h-4 w-4" />
           </Button>
         </div>
