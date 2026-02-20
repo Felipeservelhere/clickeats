@@ -62,7 +62,7 @@ export function TableDetailSheet({ order, open, onClose }: TableDetailSheetProps
     } catch { toast.error('Erro na impressão'); }
   };
 
-  const handleComplete = () => {
+  const handleCloseTable = () => {
     updateOrder(order.id, { status: 'completed' });
     onClose();
   };
@@ -130,8 +130,8 @@ export function TableDetailSheet({ order, open, onClose }: TableDetailSheetProps
             <Button variant="outline" onClick={handlePrintAll} className="gap-1.5 h-11">
               <Printer className="h-4 w-4" /> Resumo
             </Button>
-            <Button onClick={handleComplete} className="gap-1.5 h-11 bg-success hover:bg-success/90 text-success-foreground">
-              <Check className="h-4 w-4" /> Fechar
+            <Button onClick={handleCloseTable} className="gap-1.5 h-11 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+              <Check className="h-4 w-4" /> Encerrar Mesa
             </Button>
           </div>
         </div>
