@@ -37,8 +37,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
   const [addressNumber, setAddressNumber] = useState('');
   const [reference, setReference] = useState('');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<Neighborhood | null>(null);
-  const [tableNumber, setTableNumber] = useState('');
-  const [tableReference, setTableReference] = useState('');
+  const [mesaReference, setMesaReference] = useState('');
   const [observation, setObservation] = useState('');
 
   const subtotal = items.reduce((s, i) => {
@@ -57,8 +56,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
       customerName: customerName.trim() || undefined,
       customerPhone: customerPhone.trim() || undefined,
       items,
-      tableNumber: orderType === 'mesa' && tableNumber ? parseInt(tableNumber) : undefined,
-      tableReference: orderType === 'mesa' && tableReference.trim() ? tableReference.trim() : undefined,
+      tableNumber: undefined,
+      tableReference: orderType === 'mesa' && mesaReference.trim() ? mesaReference.trim() : undefined,
       address: orderType === 'entrega' ? address.trim() || undefined : undefined,
       addressNumber: orderType === 'entrega' ? addressNumber.trim() || undefined : undefined,
       reference: orderType === 'entrega' ? reference.trim() || undefined : undefined,
@@ -80,8 +79,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
     setAddressNumber('');
     setReference('');
     setSelectedNeighborhood(null);
-    setTableNumber('');
-    setTableReference('');
+    setMesaReference('');
     setObservation('');
   };
 
@@ -161,16 +159,9 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
             <div className="space-y-3 animate-fade-in">
               <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Mesa</h4>
               <Input
-                type="number"
-                placeholder="Número da mesa"
-                value={tableNumber}
-                onChange={e => setTableNumber(e.target.value)}
-                className="bg-secondary/50"
-              />
-              <Input
-                placeholder="Ponto de referência"
-                value={tableReference}
-                onChange={e => setTableReference(e.target.value)}
+                placeholder="Mesa ou ponto de referência"
+                value={mesaReference}
+                onChange={e => setMesaReference(e.target.value)}
                 className="bg-secondary/50"
               />
             </div>

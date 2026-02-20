@@ -4,8 +4,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OrderProvider } from "@/contexts/OrderContext";
+import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import NewOrder from "./pages/NewOrder";
+import Cardapio from "./pages/Cardapio";
+import Taxas from "./pages/Taxas";
+import Mesas from "./pages/Mesas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -17,11 +21,16 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/novo-pedido" element={<NewOrder />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppLayout>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/novo-pedido" element={<NewOrder />} />
+              <Route path="/cardapio" element={<Cardapio />} />
+              <Route path="/taxas" element={<Taxas />} />
+              <Route path="/mesas" element={<Mesas />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AppLayout>
         </BrowserRouter>
       </OrderProvider>
     </TooltipProvider>
