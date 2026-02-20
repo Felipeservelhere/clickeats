@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { DbProduct } from '@/hooks/useProducts';
 import { DbPizzaSize, DbPizzaBorder, DbProductPizzaPrice, DbProductIngredient } from '@/hooks/usePizza';
-import { CartItem, Product, Addon } from '@/types/order';
+import { CartItem, Product, Addon, PizzaDetail } from '@/types/order';
 import { Minus, Plus, Pencil, X, ChevronRight } from 'lucide-react';
 
 interface PizzaBuilderModalProps {
@@ -226,12 +226,23 @@ export function PizzaBuilderModal({
     const addons: Addon[] = [];
     if (selectedBorder) addons.push({ id: selectedBorder.id, name: `Borda ${selectedBorder.name}`, price: borderPrice });
 
+    const pizzaDetail: PizzaDetail = {
+      sizeName: sizeName,
+      flavors: flavors.map(f => ({
+        name: f.product.name,
+        removedIngredients: f.removedIngredients,
+        observation: f.observation || undefined,
+      })),
+      borderName: selectedBorder?.name,
+    };
+
     onConfirm({
       cartId: crypto.randomUUID(),
-      product: { id: flavors[0].product.id, name: displayName, price: pizzaPrice, categoryId: flavors[0].product.categoryId, addons: [] },
+      product: { id: flavors[0].product.id, name: displayName, price: pizzaPrice, categoryId: flavors[0].product.categoryId, categoryName: flavors[0].product.categoryName, addons: [] },
       selectedAddons: addons,
       quantity,
       observation: obsLines.length > 0 ? obsLines.join(' | ') : undefined,
+      pizzaDetail,
     });
     resetForm();
   };

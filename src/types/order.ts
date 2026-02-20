@@ -24,12 +24,25 @@ export interface Category {
   icon: string;
 }
 
+export interface PizzaFlavorDetail {
+  name: string;
+  removedIngredients: string[];
+  observation?: string;
+}
+
+export interface PizzaDetail {
+  sizeName: string;
+  flavors: PizzaFlavorDetail[];
+  borderName?: string;
+}
+
 export interface CartItem {
   cartId: string;
   product: Product;
   selectedAddons: Addon[];
   quantity: number;
   observation?: string;
+  pizzaDetail?: PizzaDetail;
 }
 
 export interface Neighborhood {

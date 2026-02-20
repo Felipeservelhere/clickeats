@@ -125,9 +125,11 @@ const RECEIPT_STYLE = `
   .data { font-size: 18px; font-weight: bold; margin-bottom: 8px; text-align: center; }
   .info { font-size: 18px; font-weight: bold; margin-bottom: 8px; text-align: center; }
   .grupo { background: #000; color: #fff; padding: 6px 8px; margin: 10px 0 6px; font-weight: 900; font-size: 18px; text-align: center; }
-  .item { margin: 4px 0; font-size: 18px; font-weight: 900; padding-left: 4px; }
-  .adicional { font-size: 16px; font-weight: bold; padding-left: 20px; }
-  .obs { font-size: 16px; font-weight: 900; padding-left: 20px; }
+  .item { margin: 4px 0; font-size: 18px; font-weight: 900; padding-left: 4px; word-wrap: break-word; overflow-wrap: break-word; }
+  .adicional { font-size: 16px; font-weight: bold; padding-left: 20px; word-wrap: break-word; }
+  .obs { font-size: 16px; font-weight: 900; padding-left: 20px; word-wrap: break-word; }
+  .sabor { font-size: 16px; font-weight: bold; padding-left: 16px; margin: 2px 0; }
+  .sem { font-size: 14px; font-weight: bold; padding-left: 28px; color: #333; }
   .linha { border-top: 3px solid #000; margin: 10px 0; }
   .total { font-weight: 900; font-size: 26px; text-align: center; margin-top: 4px; }
   .subtotal { font-size: 18px; font-weight: bold; text-align: center; }
@@ -142,6 +144,59 @@ function formatDateTime(iso: string) {
   };
 }
 
+interface ReceiptItem {
+  quantity: number;
+  product: { name: string; price?: number; categoryId?: string; categoryName?: string };
+  selectedAddons: Array<{ name: string; price?: number }>;
+  observation?: string;
+  pizzaDetail?: {
+    sizeName: string;
+    flavors: Array<{ name: string; removedIngredients: string[]; observation?: string }>;
+    borderName?: string;
+  };
+}
+
+function renderPizzaItemKitchen(item: ReceiptItem): string {
+  const pd = item.pizzaDetail!;
+  let html = `<div class="item">${item.quantity}X PIZZA ${pd.sizeName.toUpperCase()}</div>`;
+  pd.flavors.forEach((f, idx) => {
+    html += `<div class="sabor">SABOR ${idx + 1}: ${f.name.toUpperCase()}</div>`;
+    f.removedIngredients.forEach(ing => {
+      html += `<div class="sem">S/ ${ing.toUpperCase()}</div>`;
+    });
+    if (f.observation) {
+      html += `<div class="obs">OBS: ${f.observation}</div>`;
+    }
+  });
+  if (pd.borderName) {
+    html += `<div class="adicional">BORDA: ${pd.borderName.toUpperCase()}</div>`;
+  }
+  // Non-pizza observation (general)
+  if (item.observation && !item.pizzaDetail) {
+    html += `<div class="obs">OBS: ${item.observation}</div>`;
+  }
+  return html;
+}
+
+function renderPizzaItemDelivery(item: ReceiptItem): string {
+  const pd = item.pizzaDetail!;
+  const itemTotal = ((item.product.price || 0) + item.selectedAddons.reduce((a, ad) => a + ((ad as any).price || 0), 0)) * item.quantity;
+  let html = `<div class="item">${item.quantity}X PIZZA ${pd.sizeName.toUpperCase()} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
+  pd.flavors.forEach((f, idx) => {
+    html += `<div class="sabor">SABOR ${idx + 1}: ${f.name.toUpperCase()}</div>`;
+    f.removedIngredients.forEach(ing => {
+      html += `<div class="sem">S/ ${ing.toUpperCase()}</div>`;
+    });
+    if (f.observation) {
+      html += `<div class="obs">OBS: ${f.observation}</div>`;
+    }
+  });
+  if (pd.borderName) {
+    html += `<div class="adicional">BORDA: ${pd.borderName.toUpperCase()}</div>`;
+  }
+  return html;
+}
+
 export function buildKitchenReceipt(order: {
   type: string;
   number: number;
@@ -149,12 +204,7 @@ export function buildKitchenReceipt(order: {
   customerName?: string;
   tableNumber?: number;
   tableReference?: string;
-  items: Array<{
-    quantity: number;
-    product: { name: string; categoryId?: string; categoryName?: string };
-    selectedAddons: Array<{ name: string }>;
-    observation?: string;
-  }>;
+  items: ReceiptItem[];
 }): string {
   const typeLabel = order.type === 'mesa'
     ? `MESA #${order.tableReference || order.tableNumber}`
@@ -176,14 +226,18 @@ export function buildKitchenReceipt(order: {
   for (const group of grouped) {
     html += `<div class="grupo">${group.categoryName}</div>`;
     for (const item of group.items) {
-      html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()}</div>`;
-      if (item.selectedAddons.length > 0) {
-        for (const addon of item.selectedAddons) {
-          html += `<div class="adicional">+ ${addon.name}</div>`;
+      if (item.pizzaDetail) {
+        html += renderPizzaItemKitchen(item);
+      } else {
+        html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()}</div>`;
+        if (item.selectedAddons.length > 0) {
+          for (const addon of item.selectedAddons) {
+            html += `<div class="adicional">+ ${addon.name}</div>`;
+          }
         }
-      }
-      if (item.observation) {
-        html += `<div class="obs">OBS: ${item.observation}</div>`;
+        if (item.observation) {
+          html += `<div class="obs">OBS: ${item.observation}</div>`;
+        }
       }
     }
   }
@@ -192,10 +246,8 @@ export function buildKitchenReceipt(order: {
   return html;
 }
 
-function groupItemsByCategory(
-  items: Array<{ quantity: number; product: { name: string; categoryId?: string; categoryName?: string; price?: number }; selectedAddons: Array<{ name: string; price?: number }>; observation?: string }>
-) {
-  const catMap = new Map<string, typeof items>();
+function groupItemsByCategory(items: ReceiptItem[]) {
+  const catMap = new Map<string, ReceiptItem[]>();
   const catNames = new Map<string, string>();
   for (const item of items) {
     const catId = item.product.categoryId || 'outros';
@@ -205,7 +257,7 @@ function groupItemsByCategory(
       catNames.set(catId, item.product.categoryName.toUpperCase());
     }
   }
-  const groups: Array<{ categoryName: string; items: typeof items }> = [];
+  const groups: Array<{ categoryName: string; items: ReceiptItem[] }> = [];
   for (const [catId, catItems] of catMap) {
     groups.push({ categoryName: catNames.get(catId) || 'OUTROS', items: catItems });
   }
@@ -230,12 +282,7 @@ export function buildDeliveryReceipt(order: {
   total: number;
   paymentMethod?: string;
   changeFor?: number;
-  items: Array<{
-    quantity: number;
-    product: { name: string; price: number; categoryId?: string; categoryName?: string };
-    selectedAddons: Array<{ name: string; price: number }>;
-    observation?: string;
-  }>;
+  items: ReceiptItem[];
 }): string {
   const typeLabel = order.type === 'mesa'
     ? `MESA #${order.tableReference || order.tableNumber}`
@@ -269,19 +316,23 @@ export function buildDeliveryReceipt(order: {
   for (const group of grouped) {
     html += `<div class="grupo">${group.categoryName}</div>`;
     for (const item of group.items) {
-      const itemTotal = ((item.product as any).price + item.selectedAddons.reduce((a: number, ad: any) => a + (ad.price || 0), 0)) * item.quantity;
-      if (order.type === 'mesa') {
-        html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()}</div>`;
+      if (item.pizzaDetail) {
+        html += renderPizzaItemDelivery(item);
       } else {
-        html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
-      }
-      if (item.selectedAddons.length > 0) {
-        for (const addon of item.selectedAddons) {
-          html += `<div class="adicional">+ ${addon.name}</div>`;
+        const itemTotal = ((item.product as any).price + item.selectedAddons.reduce((a: number, ad: any) => a + (ad.price || 0), 0)) * item.quantity;
+        if (order.type === 'mesa') {
+          html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()}</div>`;
+        } else {
+          html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
         }
-      }
-      if (item.observation) {
-        html += `<div class="obs">OBS: ${item.observation}</div>`;
+        if (item.selectedAddons.length > 0) {
+          for (const addon of item.selectedAddons) {
+            html += `<div class="adicional">+ ${addon.name}</div>`;
+          }
+        }
+        if (item.observation) {
+          html += `<div class="obs">OBS: ${item.observation}</div>`;
+        }
       }
     }
   }
@@ -321,6 +372,24 @@ export function buildDeliveryReceipt(order: {
 
   html += `</div></body></html>`;
   return html;
+}
+
+/** Check if an order has all delivery/pickup details filled */
+export function isDeliveryDetailsFilled(order: {
+  type: string;
+  customerName?: string;
+  customerPhone?: string;
+  address?: string;
+  neighborhood?: { name: string };
+  paymentMethod?: string;
+}): boolean {
+  if (order.type === 'entrega') {
+    return !!(order.customerName && order.customerPhone && order.address && order.neighborhood?.name && order.paymentMethod);
+  }
+  if (order.type === 'retirada') {
+    return !!(order.customerName && order.paymentMethod);
+  }
+  return false;
 }
 
 export async function printRaw(data: string, printerName?: string): Promise<boolean> {
