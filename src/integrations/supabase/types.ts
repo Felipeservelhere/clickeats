@@ -46,6 +46,33 @@ export type Database = {
           },
         ]
       }
+      app_users: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          is_primary: boolean
+          password_hash: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          is_primary?: boolean
+          password_hash: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_primary?: boolean
+          password_hash?: string
+          username?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -355,7 +382,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      authenticate_user: {
+        Args: { p_password: string; p_username: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
