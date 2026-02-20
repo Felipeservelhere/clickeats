@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CartItem, Order, OrderType, Neighborhood } from '@/types/order';
+import { CartItem, Order, OrderType, Neighborhood, PaymentMethod } from '@/types/order';
 import { useNeighborhoods } from '@/hooks/useNeighborhoods';
 import { useOrders } from '@/contexts/OrderContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MapPin, Truck, Store, UtensilsCrossed } from 'lucide-react';
+import { MapPin, Truck, Store, UtensilsCrossed, Banknote, CreditCard, QrCode, MoreHorizontal } from 'lucide-react';
 
 interface CheckoutSheetProps {
   open: boolean;
@@ -30,6 +30,13 @@ const typeIcons: Record<OrderType, React.ReactNode> = {
   retirada: <Store className="h-4 w-4" />,
 };
 
+const paymentOptions: { value: PaymentMethod; label: string; icon: React.ReactNode }[] = [
+  { value: 'dinheiro', label: 'Dinheiro', icon: <Banknote className="h-4 w-4" /> },
+  { value: 'pix', label: 'PIX', icon: <QrCode className="h-4 w-4" /> },
+  { value: 'cartao', label: 'Cartão', icon: <CreditCard className="h-4 w-4" /> },
+  { value: 'outros', label: 'Outros', icon: <MoreHorizontal className="h-4 w-4" /> },
+];
+
 export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNumber }: CheckoutSheetProps) {
   const { getNextNumber } = useOrders();
   const { data: neighborhoods = [] } = useNeighborhoods();
@@ -45,8 +52,9 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<Neighborhood | null>(null);
   const [mesaReference, setMesaReference] = useState('');
   const [observation, setObservation] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('dinheiro');
+  const [changeFor, setChangeFor] = useState('');
 
-  // When forced table number changes, update type
   useEffect(() => {
     if (isMesaMode) {
       setOrderType('mesa');
@@ -60,6 +68,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
 
   const deliveryFee = orderType === 'entrega' && selectedNeighborhood ? selectedNeighborhood.fee : 0;
   const total = subtotal + deliveryFee;
+
+  const changeAmount = paymentMethod === 'dinheiro' && changeFor ? parseFloat(changeFor) - total : 0;
 
   const handleFinalize = () => {
     const order: Order = {
@@ -80,6 +90,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
       subtotal,
       deliveryFee,
       total,
+      paymentMethod,
+      changeFor: paymentMethod === 'dinheiro' && changeFor ? parseFloat(changeFor) : undefined,
       createdAt: new Date().toISOString(),
     };
     onFinalize(order);
@@ -89,9 +101,9 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const resetForm = () => {
     setCustomerName(''); setCustomerPhone(''); setAddress(''); setAddressNumber('');
     setReference(''); setSelectedNeighborhood(null); setMesaReference(''); setObservation('');
+    setPaymentMethod('dinheiro'); setChangeFor('');
   };
 
-  // On mobile with forced table, only show mesa mode
   const showTypeSelector = !isMesaMode;
 
   return (
@@ -171,6 +183,45 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
               <Input placeholder="Mesa ou ponto de referência" value={mesaReference} onChange={e => setMesaReference(e.target.value)} className="bg-secondary/50" />
             </div>
           )}
+
+          {/* Payment Method */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Forma de Pagamento</h4>
+            <div className="grid grid-cols-4 gap-2">
+              {paymentOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPaymentMethod(opt.value)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
+                    paymentMethod === opt.value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
+                  }`}
+                >
+                  {opt.icon}
+                  <span className="text-xs font-semibold">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Change for cash */}
+            {paymentMethod === 'dinheiro' && (
+              <div className="space-y-2 animate-fade-in">
+                <Input
+                  type="number"
+                  placeholder="Troco para quanto? (R$)"
+                  value={changeFor}
+                  onChange={e => setChangeFor(e.target.value)}
+                  className="bg-secondary/50"
+                />
+                {changeFor && parseFloat(changeFor) > total && (
+                  <p className="text-sm font-semibold text-primary">
+                    Troco: R$ {changeAmount.toFixed(2)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Observation */}
           <div className="space-y-3">

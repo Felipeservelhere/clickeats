@@ -56,6 +56,15 @@ const Index = () => {
   };
 
   const handleDeliveryPrint = (order: Order) => {
+    // Check if delivery order has required data filled
+    if (order.type === 'entrega' && (!order.address || !order.neighborhood || !order.customerName)) {
+      toast.error('Preencha os dados de entrega antes de imprimir o resumo (nome, endereço, bairro)');
+      return;
+    }
+    if (!order.paymentMethod) {
+      toast.error('Defina a forma de pagamento antes de imprimir o resumo');
+      return;
+    }
     setPrintOrder(order);
     setPrintType('delivery');
     setShowPrint(true);

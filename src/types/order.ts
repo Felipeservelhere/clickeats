@@ -1,5 +1,6 @@
 export type OrderType = 'mesa' | 'entrega' | 'retirada';
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed';
+export type PaymentMethod = 'dinheiro' | 'pix' | 'cartao' | 'outros';
 
 export interface Addon {
   id: string;
@@ -55,5 +56,7 @@ export interface Order {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  paymentMethod?: PaymentMethod;
+  changeFor?: number;
   createdAt: string;
 }
