@@ -31,8 +31,8 @@ export function AppSidebar() {
       <Sidebar collapsible="icon" className="border-r border-border bg-card">
         <div className="p-3 flex items-center justify-center border-b border-border">
           {collapsed
-            ? <img src={logo} alt="Logo" className="h-8 w-8 object-contain" />
-            : <img src={logo} alt="Logo" className="h-10 object-contain" />
+            ? <img src={logo} alt="Logo" className="h-8 w-8 object-contain dark:invert" style={{ filter: 'brightness(0)' }} />
+            : <img src={logo} alt="Logo" className="h-10 object-contain dark:invert" style={{ filter: 'brightness(0)' }} />
           }
         </div>
         <SidebarContent>
