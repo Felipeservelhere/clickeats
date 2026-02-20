@@ -21,8 +21,8 @@ export function TableDetailSheet({ order, open, onClose }: TableDetailSheetProps
 
   const handleAddMore = () => {
     onClose();
-    // Navigate to new order page — CheckoutSheet will detect existing mesa order
-    navigate('/novo-pedido');
+    const tableNum = order.tableNumber || order.tableReference;
+    navigate(`/novo-pedido?mesa=${tableNum}`);
   };
 
   const handleRepeatItem = async (item: CartItem) => {

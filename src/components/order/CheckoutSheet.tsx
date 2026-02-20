@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CartItem, Order, OrderType, Neighborhood } from '@/types/order';
 import { useNeighborhoods } from '@/hooks/useNeighborhoods';
 import { useOrders } from '@/contexts/OrderContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MapPin, Truck, Store, UtensilsCrossed } from 'lucide-react';
 
 interface CheckoutSheetProps {
@@ -14,6 +15,7 @@ interface CheckoutSheetProps {
   onClose: () => void;
   items: CartItem[];
   onFinalize: (order: Order) => void;
+  forcedTableNumber?: number;
 }
 
 const typeLabels: Record<OrderType, string> = {
@@ -28,11 +30,13 @@ const typeIcons: Record<OrderType, React.ReactNode> = {
   retirada: <Store className="h-4 w-4" />,
 };
 
-export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutSheetProps) {
+export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNumber }: CheckoutSheetProps) {
   const { getNextNumber } = useOrders();
   const { data: neighborhoods = [] } = useNeighborhoods();
+  const isMobile = useIsMobile();
 
-  const [orderType, setOrderType] = useState<OrderType>('entrega');
+  const isMesaMode = forcedTableNumber !== undefined;
+  const [orderType, setOrderType] = useState<OrderType>(isMesaMode ? 'mesa' : 'entrega');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -41,6 +45,14 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<Neighborhood | null>(null);
   const [mesaReference, setMesaReference] = useState('');
   const [observation, setObservation] = useState('');
+
+  // When forced table number changes, update type
+  useEffect(() => {
+    if (isMesaMode) {
+      setOrderType('mesa');
+      setMesaReference(String(forcedTableNumber));
+    }
+  }, [forcedTableNumber, isMesaMode]);
 
   const subtotal = items.reduce((s, i) => {
     return s + (i.product.price + i.selectedAddons.reduce((a, ad) => a + ad.price, 0)) * i.quantity;
@@ -58,8 +70,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
       customerName: customerName.trim() || undefined,
       customerPhone: customerPhone.trim() || undefined,
       items,
-      tableNumber: undefined,
-      tableReference: orderType === 'mesa' && mesaReference.trim() ? mesaReference.trim() : undefined,
+      tableNumber: isMesaMode ? forcedTableNumber : undefined,
+      tableReference: orderType === 'mesa' ? (isMesaMode ? String(forcedTableNumber) : mesaReference.trim() || undefined) : undefined,
       address: orderType === 'entrega' ? address.trim() || undefined : undefined,
       addressNumber: orderType === 'entrega' ? addressNumber.trim() || undefined : undefined,
       reference: orderType === 'entrega' ? reference.trim() || undefined : undefined,
@@ -79,41 +91,50 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
     setReference(''); setSelectedNeighborhood(null); setMesaReference(''); setObservation('');
   };
 
+  // On mobile with forced table, only show mesa mode
+  const showTypeSelector = !isMesaMode;
+
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="bottom" className="bg-card border-border max-h-[90vh] overflow-y-auto rounded-t-2xl">
         <SheetHeader>
-          <SheetTitle className="font-heading text-xl">Finalizar Pedido</SheetTitle>
+          <SheetTitle className="font-heading text-xl">
+            {isMesaMode ? `Mesa ${forcedTableNumber}` : 'Finalizar Pedido'}
+          </SheetTitle>
         </SheetHeader>
 
         <div className="space-y-5 mt-4 pb-4">
-          {/* Customer Info */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Cliente</h4>
-            <Input placeholder="Nome do cliente" value={customerName} onChange={e => setCustomerName(e.target.value)} className="bg-secondary/50" />
-            <Input placeholder="Telefone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="bg-secondary/50" />
-          </div>
-
-          {/* Order Type */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Tipo do Pedido</h4>
-            <div className="grid grid-cols-3 gap-2">
-              {(['entrega', 'retirada', 'mesa'] as OrderType[]).map(type => (
-                <button
-                  key={type}
-                  onClick={() => setOrderType(type)}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
-                    orderType === type
-                      ? `order-border-${type} order-type-${type}`
-                      : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
-                  }`}
-                >
-                  {typeIcons[type]}
-                  <span className="text-sm font-semibold">{typeLabels[type]}</span>
-                </button>
-              ))}
+          {/* Customer Info - only show for non-mesa or desktop */}
+          {(!isMesaMode || !isMobile) && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Cliente</h4>
+              <Input placeholder="Nome do cliente" value={customerName} onChange={e => setCustomerName(e.target.value)} className="bg-secondary/50" />
+              <Input placeholder="Telefone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="bg-secondary/50" />
             </div>
-          </div>
+          )}
+
+          {/* Order Type - hide when forced mesa */}
+          {showTypeSelector && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Tipo do Pedido</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {(['entrega', 'retirada', 'mesa'] as OrderType[]).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setOrderType(type)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
+                      orderType === type
+                        ? `order-border-${type} order-type-${type}`
+                        : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
+                    }`}
+                  >
+                    {typeIcons[type]}
+                    <span className="text-sm font-semibold">{typeLabels[type]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Type-specific fields */}
           {orderType === 'entrega' && (
@@ -144,7 +165,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
             </div>
           )}
 
-          {orderType === 'mesa' && (
+          {orderType === 'mesa' && !isMesaMode && (
             <div className="space-y-3 animate-fade-in">
               <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Mesa</h4>
               <Input placeholder="Mesa ou ponto de referência" value={mesaReference} onChange={e => setMesaReference(e.target.value)} className="bg-secondary/50" />

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCategories } from '@/hooks/useCategories';
 import { useProducts } from '@/hooks/useProducts';
 import { CartItem, Product, Order, Addon } from '@/types/order';
@@ -16,6 +16,10 @@ import { toast } from 'sonner';
 
 const NewOrder = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mesaParam = searchParams.get('mesa');
+  const forcedTableNumber = mesaParam ? parseInt(mesaParam, 10) : undefined;
+
   const { addOrder, addItemsToTableOrder, getActiveTableOrder } = useOrders();
   const { data: dbCategories = [] } = useCategories();
   const { data: dbProducts = [] } = useProducts();
@@ -99,7 +103,6 @@ const NewOrder = () => {
     const hasPrinter = !!getSavedPrinter();
     if (!hasPrinter) return;
     try {
-      // Build receipt with only the new items if provided
       const receiptOrder = items ? { ...order, items } : order;
       const data = buildKitchenReceipt(receiptOrder);
       const ok = await printRaw(data);
@@ -142,6 +145,7 @@ const NewOrder = () => {
     setCart([]);
     navigate('/');
   };
+
   return (
     <div className="h-[calc(100vh-3rem)] flex flex-col bg-background">
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border">
@@ -149,7 +153,9 @@ const NewOrder = () => {
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate('/')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="font-heading font-bold text-lg shrink-0">Novo Pedido</h1>
+          <h1 className="font-heading font-bold text-lg shrink-0">
+            {forcedTableNumber ? `Mesa ${forcedTableNumber}` : 'Novo Pedido'}
+          </h1>
         </div>
         <div ref={tabsRef} className="flex gap-1 px-4 pb-2 overflow-x-auto scrollbar-hide">
           {categories.map(cat => (
@@ -203,7 +209,7 @@ const NewOrder = () => {
 
       <AddonsModal product={addonsProduct} existingItem={editingItem} open={!!addonsProduct} onClose={() => { setAddonsProduct(null); setEditingItem(undefined); }} onConfirm={handleAddToCart} />
       <CartBar items={cart} onEditItem={handleEditItem} onRemoveItem={handleRemoveItem} onCheckout={() => setShowCheckout(true)} />
-      <CheckoutSheet open={showCheckout} onClose={() => setShowCheckout(false)} items={cart} onFinalize={handleFinalize} />
+      <CheckoutSheet open={showCheckout} onClose={() => setShowCheckout(false)} items={cart} onFinalize={handleFinalize} forcedTableNumber={forcedTableNumber} />
     </div>
   );
 };
