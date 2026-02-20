@@ -58,14 +58,17 @@ function loadCertificate() {
 }
 
 export async function connectQZ(): Promise<boolean> {
-  if (connected && qz.websocket.isActive()) return true;
+  if (qz.websocket.isActive()) {
+    connected = true;
+    return true;
+  }
   loadCertificate();
   try {
     await qz.websocket.connect();
     connected = true;
     return true;
   } catch (err: any) {
-    if (err?.message?.includes('already active')) {
+    if (err?.message?.includes('already active') || err?.message?.includes('already')) {
       connected = true;
       return true;
     }
