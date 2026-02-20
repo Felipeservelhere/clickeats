@@ -75,62 +75,47 @@ const Index = () => {
     const occupiedTables = new Set(tableOrders.map(o => o.tableNumber));
 
     return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Flame className="h-6 w-6 text-primary" />
-              <h1 className="font-heading font-bold text-xl">Mesas</h1>
-            </div>
-          </div>
-        </header>
-
-        <main className="p-4">
-          <div className="grid grid-cols-4 gap-3">
-            {defaultTables.map(num => {
-              const occupied = occupiedTables.has(num);
-              const order = tableOrders.find(o => o.tableNumber === num);
-              return (
-                <button
-                  key={num}
-                  onClick={() => navigate('/novo-pedido')}
-                  className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-                    occupied
-                      ? 'order-border-mesa bg-card order-type-mesa'
-                      : 'border-border bg-card hover:border-primary/50'
-                  }`}
-                >
-                  <span className={`font-heading font-bold text-lg ${occupied ? '' : 'text-foreground'}`}>{num}</span>
-                  {order && (
-                    <span className="text-[10px] opacity-80">
-                      {order.items.reduce((s, i) => s + i.quantity, 0)} itens
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </main>
+      <div className="bg-background p-4">
+        <h1 className="font-heading font-bold text-xl mb-4">Mesas</h1>
+        <div className="grid grid-cols-4 gap-3">
+          {defaultTables.map(num => {
+            const occupied = occupiedTables.has(num);
+            const order = tableOrders.find(o => o.tableNumber === num);
+            return (
+              <button
+                key={num}
+                onClick={() => navigate('/novo-pedido')}
+                className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
+                  occupied
+                    ? 'order-border-mesa bg-card order-type-mesa'
+                    : 'border-border bg-card hover:border-primary/50'
+                }`}
+              >
+                <span className={`font-heading font-bold text-lg ${occupied ? '' : 'text-foreground'}`}>{num}</span>
+                {order && (
+                  <span className="text-[10px] opacity-80">
+                    {order.items.reduce((s, i) => s + i.quantity, 0)} itens
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   }
 
   // Desktop: Full dashboard
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border p-4">
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center gap-3">
-            <Flame className="h-7 w-7 text-primary" />
-            <h1 className="font-heading font-bold text-2xl">PedidoFácil</h1>
-          </div>
-          <Button onClick={() => navigate('/novo-pedido')} className="gap-2 font-semibold">
-            <Plus className="h-4 w-4" /> Novo Pedido
-          </Button>
-        </div>
-      </header>
+    <div className="bg-background p-4">
+      <div className="flex items-center justify-between max-w-6xl mx-auto mb-6">
+        <h1 className="font-heading font-bold text-2xl">Pedidos</h1>
+        <Button onClick={() => navigate('/novo-pedido')} className="gap-2 font-semibold">
+          <Plus className="h-4 w-4" /> Novo Pedido
+        </Button>
+      </div>
 
-      <main className="max-w-6xl mx-auto p-4">
+      <div className="max-w-6xl mx-auto">
         {/* Filter tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {typeFilters.map(f => (
@@ -190,7 +175,7 @@ const Index = () => {
             </div>
           </>
         )}
-      </main>
+      </div>
 
       {/* Print Modal */}
       <PrintModal
