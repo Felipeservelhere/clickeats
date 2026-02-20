@@ -53,6 +53,7 @@ export type Database = {
           id: string
           name: string
           sort_order: number
+          type: string
         }
         Insert: {
           created_at?: string
@@ -60,6 +61,7 @@ export type Database = {
           id?: string
           name: string
           sort_order?: number
+          type?: string
         }
         Update: {
           created_at?: string
@@ -67,6 +69,7 @@ export type Database = {
           id?: string
           name?: string
           sort_order?: number
+          type?: string
         }
         Relationships: []
       }
@@ -168,6 +171,119 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      pizza_borders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      pizza_sizes: {
+        Row: {
+          created_at: string
+          id: string
+          max_flavors: number
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_flavors?: number
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_flavors?: number
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      product_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_ingredients_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_pizza_prices: {
+        Row: {
+          created_at: string
+          id: string
+          pizza_size_id: string
+          price: number
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pizza_size_id: string
+          price?: number
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pizza_size_id?: string
+          price?: number
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_pizza_prices_pizza_size_id_fkey"
+            columns: ["pizza_size_id"]
+            isOneToOne: false
+            referencedRelation: "pizza_sizes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_pizza_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
