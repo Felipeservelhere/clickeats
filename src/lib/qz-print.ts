@@ -1,5 +1,5 @@
 import qz from 'qz-tray';
-import { KJUR } from 'jsrsasign';
+import { KJUR, hextob64 } from 'jsrsasign';
 
 let connected = false;
 
@@ -21,27 +21,34 @@ function loadCertificate() {
     qz.security.setCertificatePromise((resolve) => {
       resolve(cert);
     });
+  } else {
+    console.warn('QZ: No certificate found in localStorage');
   }
 
   qz.security.setSignatureAlgorithm('SHA512');
 
   const privateKey = localStorage.getItem('qz-private-key');
   if (privateKey) {
+    console.log('QZ: Private key found, setting up signing...');
     (qz.security as any).setSignaturePromise((toSign: string) => {
       return (resolve: any, reject: any) => {
         try {
+          const pk = privateKey;
           const sig = new KJUR.crypto.Signature({ alg: 'SHA512withRSA' });
-          sig.init(privateKey);
+          sig.init(pk);
           sig.updateString(toSign);
           const hex = sig.sign();
-          resolve(KJUR.hextob64(hex));
+          const b64 = hextob64(hex);
+          console.log('QZ: Signature generated successfully');
+          resolve(b64);
         } catch (err) {
-          console.error('Signing failed:', err);
+          console.error('QZ: Signing failed:', err);
           reject(err);
         }
       };
     });
   } else {
+    console.warn('QZ: No private key found, signature will be empty');
     qz.security.setSignaturePromise(() => {
       return (resolve: any) => {
         resolve();
