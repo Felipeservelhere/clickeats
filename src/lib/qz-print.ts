@@ -129,7 +129,7 @@ const RECEIPT_STYLE = `
   .adicional { font-size: 16px; font-weight: bold; padding-left: 20px; word-wrap: break-word; }
   .obs { font-size: 16px; font-weight: 900; padding-left: 20px; word-wrap: break-word; }
   .sabor { font-size: 16px; font-weight: bold; padding-left: 16px; margin: 2px 0; }
-  .sem { font-size: 14px; font-weight: bold; padding-left: 28px; color: #333; }
+  .sem { font-size: 16px; font-weight: 900; padding-left: 28px; color: #000; }
   .linha { border-top: 3px solid #000; margin: 10px 0; }
   .total { font-weight: 900; font-size: 26px; text-align: center; margin-top: 4px; }
   .subtotal { font-size: 18px; font-weight: bold; text-align: center; }
