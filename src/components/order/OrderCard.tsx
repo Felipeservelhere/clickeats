@@ -24,8 +24,8 @@ export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, 
     <div
       onClick={onClick}
       className={`rounded-xl border-2 p-4 transition-all animate-scale-in ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''} ${
-        isCompleted ? 'opacity-50 border-border' : order.type === 'mesa' ? 'border-destructive bg-destructive/10' : `order-border-${order.type}`
-      } bg-card`}
+      isCompleted ? 'opacity-50 border-border' : `order-border-${order.type}`
+    } bg-card`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
