@@ -114,21 +114,22 @@ const RECEIPT_STYLE = `
     font-family: monospace;
     width: 320px;
     margin: 0 auto;
-    text-align: center;
+    text-align: left;
     color: #000;
     background: #fff;
-    padding: 0;
+    padding: 4px;
+    -webkit-print-color-adjust: exact;
   }
-  .tipo { font-size: 22px; font-weight: bold; }
-  .data { font-size: 13px; margin-bottom: 8px; }
-  .info { font-size: 14px; margin-bottom: 8px; }
-  .grupo { background: #000; color: #fff; padding: 4px 0; margin: 10px 0 6px; font-weight: bold; }
-  .item { margin: 4px 0; font-size: 14px; }
-  .adicional { font-size: 13px; opacity: 0.8; }
-  .obs { font-size: 13px; font-weight: bold; }
-  .linha { border-top: 1px solid #000; margin: 8px 0; }
-  .total { font-weight: bold; font-size: 18px; }
-  .subtotal { font-size: 14px; }
+  .tipo { font-size: 28px; font-weight: bold; text-align: center; }
+  .data { font-size: 16px; margin-bottom: 8px; text-align: center; }
+  .info { font-size: 16px; margin-bottom: 8px; text-align: center; }
+  .grupo { background: #000; color: #fff; padding: 6px 8px; margin: 10px 0 6px; font-weight: bold; font-size: 16px; text-align: center; }
+  .item { margin: 4px 0; font-size: 16px; font-weight: bold; padding-left: 4px; }
+  .adicional { font-size: 15px; padding-left: 20px; }
+  .obs { font-size: 15px; font-weight: bold; padding-left: 20px; }
+  .linha { border-top: 2px solid #000; margin: 10px 0; }
+  .total { font-weight: bold; font-size: 22px; text-align: center; margin-top: 4px; }
+  .subtotal { font-size: 16px; text-align: center; }
 </style>
 `;
 
