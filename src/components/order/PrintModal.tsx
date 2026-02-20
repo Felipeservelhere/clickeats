@@ -58,9 +58,6 @@ export function PrintModal({ order, type, open, onClose }: PrintModalProps) {
     setPrinting(false);
   };
 
-  const handleBrowserPrint = () => {
-    window.print();
-  };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -172,16 +169,10 @@ export function PrintModal({ order, type, open, onClose }: PrintModalProps) {
           <Button variant="outline" onClick={onClose} className="flex-1">
             {printed ? 'Fechar' : 'Pular'}
           </Button>
-          {hasPrinter ? (
-            <Button onClick={handleQZPrint} className="flex-1 gap-2" disabled={printing}>
-              {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : printed ? <Check className="h-4 w-4" /> : <Printer className="h-4 w-4" />}
-              {printing ? 'Imprimindo...' : printed ? 'Impresso!' : 'Imprimir'}
-            </Button>
-          ) : (
-            <Button onClick={handleBrowserPrint} className="flex-1 gap-2">
-              <Printer className="h-4 w-4" /> Imprimir
-            </Button>
-          )}
+          <Button onClick={handleQZPrint} className="flex-1 gap-2" disabled={printing || !hasPrinter}>
+            {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : printed ? <Check className="h-4 w-4" /> : <Printer className="h-4 w-4" />}
+            {printing ? 'Imprimindo...' : printed ? 'Impresso!' : hasPrinter ? 'Imprimir' : 'Sem impressora'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

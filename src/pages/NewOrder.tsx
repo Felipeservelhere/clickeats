@@ -4,6 +4,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useProducts } from '@/hooks/useProducts';
 import { CartItem, Product, Order, Addon } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
+import { printRaw, buildKitchenReceipt, getSavedPrinter } from '@/lib/qz-print';
 import { AddonsModal } from '@/components/order/AddonsModal';
 import { CartBar } from '@/components/order/CartBar';
 import { CheckoutSheet } from '@/components/order/CheckoutSheet';
@@ -11,10 +12,11 @@ import { PrintModal } from '@/components/order/PrintModal';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { FoodIcon } from '@/components/FoodIcon';
+import { toast } from 'sonner';
 
 const NewOrder = () => {
   const navigate = useNavigate();
-  const { addOrder } = useOrders();
+  const { addOrder, addItemsToTableOrder, getActiveTableOrder } = useOrders();
   const { data: dbCategories = [] } = useCategories();
   const { data: dbProducts = [] } = useProducts();
 
@@ -96,8 +98,48 @@ const NewOrder = () => {
   const handleEditItem = (item: CartItem) => { setEditingItem(item); setAddonsProduct(item.product); };
   const handleRemoveItem = (cartId: string) => setCart(prev => prev.filter(i => i.cartId !== cartId));
 
-  const handleFinalize = (order: Order) => {
-    addOrder(order); setCreatedOrder(order); setShowCheckout(false); setShowKitchenPrint(true);
+  const autoQZPrint = async (order: Order, items?: CartItem[]) => {
+    const hasPrinter = !!getSavedPrinter();
+    if (!hasPrinter) return;
+    try {
+      // Build receipt with only the new items if provided
+      const receiptOrder = items ? { ...order, items } : order;
+      const data = buildKitchenReceipt(receiptOrder);
+      const ok = await printRaw(data);
+      if (ok) toast.success('Impresso automaticamente!');
+      else toast.error('Falha na impressão automática');
+    } catch {
+      toast.error('Erro na impressão automática');
+    }
+  };
+
+  const handleFinalize = async (order: Order) => {
+    // Check if mesa order and there's already an active order for this table
+    if (order.type === 'mesa' && order.tableReference) {
+      const existing = getActiveTableOrder(order.tableReference);
+      if (existing) {
+        // Accumulate items to existing order, print only new items
+        const updated = addItemsToTableOrder(order.tableReference, order.items, order.subtotal);
+        if (updated) {
+          await autoQZPrint(updated, order.items);
+          setShowCheckout(false);
+          setCart([]);
+          navigate('/');
+          return;
+        }
+      }
+    }
+    addOrder(order);
+    // Auto-print kitchen for all orders
+    await autoQZPrint(order);
+    setCreatedOrder(order);
+    setShowCheckout(false);
+    // For mesa, go straight to dashboard (no delivery print needed)
+    if (order.type === 'mesa') {
+      navigate('/');
+      return;
+    }
+    setShowKitchenPrint(true);
   };
   const handleKitchenPrintClose = () => {
     setShowKitchenPrint(false);

@@ -7,6 +7,7 @@ interface OrderCardProps {
   onKitchenPrint: () => void;
   onDeliveryPrint: () => void;
   onComplete: () => void;
+  onClick?: () => void;
 }
 
 const typeLabels = { mesa: 'MESA', entrega: 'ENTREGA', retirada: 'RETIRADA' };
@@ -15,14 +16,17 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete }: OrderCardProps) {
+export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, onClick }: OrderCardProps) {
   const totalItems = order.items.reduce((s, i) => s + i.quantity, 0);
   const isCompleted = order.status === 'completed';
 
   return (
-    <div className={`rounded-xl border-2 p-4 transition-all animate-scale-in ${
-      isCompleted ? 'opacity-50 border-border' : `order-border-${order.type}`
-    } bg-card`}>
+    <div
+      onClick={onClick}
+      className={`rounded-xl border-2 p-4 transition-all animate-scale-in ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''} ${
+        isCompleted ? 'opacity-50 border-border' : order.type === 'mesa' ? 'border-destructive bg-destructive/10' : `order-border-${order.type}`
+      } bg-card`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <span className={`order-type-${order.type} px-3 py-1 rounded-full text-sm font-heading font-bold`}>
