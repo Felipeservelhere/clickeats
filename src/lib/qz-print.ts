@@ -77,6 +77,26 @@ export function savePrinter(name: string) {
 }
 
 // ESC/POS receipt builder
+const ESC = '\x1B';
+const GS = '\x1D';
+const BOLD_ON = ESC + 'E' + '\x01';
+const BOLD_OFF = ESC + 'E' + '\x00';
+const CENTER = ESC + 'a' + '\x01';
+const LEFT = ESC + 'a' + '\x00';
+const RIGHT = ESC + 'a' + '\x02';
+const DOUBLE = GS + '!' + '\x11';
+const NORMAL = GS + '!' + '\x00';
+const RESET = ESC + '@';
+const CUT = GS + 'V' + '\x00';
+const LINE = '================================\n';
+const DASHED = '--------------------------------\n';
+const FEED = '\n\n\n';
+
+function padLine(left: string, right: string, width = 32): string {
+  const space = width - left.length - right.length;
+  return left + (space > 0 ? ' '.repeat(space) : ' ') + right + '\n';
+}
+
 export function buildKitchenReceipt(order: {
   type: string;
   number: number;
@@ -91,53 +111,56 @@ export function buildKitchenReceipt(order: {
     observation?: string;
   }>;
 }): string {
-  const ESC = '\x1B';
-  const GS = '\x1D';
   const lines: string[] = [];
-
-  // Initialize printer
-  lines.push(ESC + '@'); // Reset
-  lines.push(ESC + 'a' + '\x01'); // Center
-
-  // Bold title
-  lines.push(ESC + 'E' + '\x01'); // Bold on
-  lines.push(GS + '!' + '\x11'); // Double size
   const typeLabel = order.type === 'mesa' ? 'MESA' : order.type === 'entrega' ? 'ENTREGA' : 'RETIRADA';
-  lines.push(`${typeLabel}#${order.number}\n`);
-  lines.push(GS + '!' + '\x00'); // Normal size
-  lines.push(ESC + 'E' + '\x00'); // Bold off
-
-  // Date
   const d = new Date(order.createdAt);
-  lines.push(`${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n`);
+  const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const date = d.toLocaleDateString('pt-BR');
 
-  // Customer
+  lines.push(RESET);
+  lines.push(CENTER);
+  lines.push(LINE);
+  lines.push(BOLD_ON + DOUBLE);
+  lines.push(`** COZINHA **\n`);
+  lines.push(NORMAL + BOLD_OFF);
+  lines.push(LINE);
+  lines.push(BOLD_ON + DOUBLE);
+  lines.push(`${typeLabel} #${order.number}\n`);
+  lines.push(NORMAL + BOLD_OFF);
+  lines.push(`${date}  ${time}\n`);
+
   if (order.customerName) {
-    lines.push(`${order.customerName}\n`);
+    lines.push(BOLD_ON + `${order.customerName}\n` + BOLD_OFF);
   }
   if (order.type === 'mesa' && order.tableReference) {
     lines.push(`Mesa: ${order.tableReference}\n`);
   }
 
-  lines.push(ESC + 'a' + '\x00'); // Left align
-  lines.push('--------------------------------\n');
+  lines.push(LINE);
+  lines.push(LEFT);
+  lines.push(CENTER + BOLD_ON + 'ITENS DO PEDIDO\n' + BOLD_OFF);
+  lines.push(LEFT);
+  lines.push(DASHED);
 
-  // Items
   for (const item of order.items) {
-    lines.push(ESC + 'E' + '\x01'); // Bold
-    lines.push(`${item.quantity}x ${item.product.name}\n`);
-    lines.push(ESC + 'E' + '\x00'); // Bold off
+    lines.push(BOLD_ON);
+    lines.push(` ${item.quantity}x  ${item.product.name.toUpperCase()}\n`);
+    lines.push(BOLD_OFF);
     if (item.selectedAddons.length > 0) {
-      lines.push(`   + ${item.selectedAddons.map(a => a.name).join(', ')}\n`);
+      lines.push(`    + ${item.selectedAddons.map(a => a.name).join(', ')}\n`);
     }
     if (item.observation) {
-      lines.push(`   OBS: ${item.observation}\n`);
+      lines.push(BOLD_ON + `    * OBS: ${item.observation}\n` + BOLD_OFF);
     }
+    lines.push('\n');
   }
 
-  lines.push('--------------------------------\n');
-  lines.push('\n\n\n');
-  lines.push(GS + 'V' + '\x00'); // Cut paper
+  lines.push(LINE);
+  lines.push(CENTER);
+  lines.push(`${order.items.reduce((s, i) => s + i.quantity, 0)} ITEM(NS) NO TOTAL\n`);
+  lines.push(LINE);
+  lines.push(FEED);
+  lines.push(CUT);
 
   return lines.join('');
 }
@@ -165,69 +188,82 @@ export function buildDeliveryReceipt(order: {
     observation?: string;
   }>;
 }): string {
-  const ESC = '\x1B';
-  const GS = '\x1D';
   const lines: string[] = [];
-
-  lines.push(ESC + '@');
-  lines.push(ESC + 'a' + '\x01'); // Center
-
-  lines.push(ESC + 'E' + '\x01');
-  lines.push(GS + '!' + '\x11');
   const typeLabel = order.type === 'mesa' ? 'MESA' : order.type === 'entrega' ? 'ENTREGA' : 'RETIRADA';
-  lines.push(`${typeLabel}#${order.number}\n`);
-  lines.push(GS + '!' + '\x00');
-  lines.push(ESC + 'E' + '\x00');
-
   const d = new Date(order.createdAt);
-  lines.push(`${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n`);
+  const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const date = d.toLocaleDateString('pt-BR');
 
-  if (order.customerName) lines.push(`${order.customerName}\n`);
-  if (order.customerPhone) lines.push(`Tel: ${order.customerPhone}\n`);
+  lines.push(RESET);
+  lines.push(CENTER);
+  lines.push(LINE);
+  lines.push(BOLD_ON + DOUBLE);
+  lines.push(`${typeLabel} #${order.number}\n`);
+  lines.push(NORMAL + BOLD_OFF);
+  lines.push(`${date}  ${time}\n`);
 
-  lines.push(ESC + 'a' + '\x00');
-  lines.push('--------------------------------\n');
+  if (order.customerName) {
+    lines.push(BOLD_ON + `${order.customerName}\n` + BOLD_OFF);
+  }
+  if (order.customerPhone) {
+    lines.push(`Tel: ${order.customerPhone}\n`);
+  }
+
+  lines.push(LINE);
+  lines.push(LEFT);
 
   // Address
   if (order.type === 'entrega') {
-    if (order.address) lines.push(`End: ${order.address}${order.addressNumber ? ', ' + order.addressNumber : ''}\n`);
-    if (order.reference) lines.push(`Ref: ${order.reference}\n`);
-    if (order.neighborhood) lines.push(`Bairro: ${order.neighborhood.name}\n`);
-    lines.push('--------------------------------\n');
+    if (order.address) {
+      lines.push(BOLD_ON + 'ENDERECO:\n' + BOLD_OFF);
+      lines.push(` ${order.address}${order.addressNumber ? ', ' + order.addressNumber : ''}\n`);
+    }
+    if (order.reference) lines.push(` Ref: ${order.reference}\n`);
+    if (order.neighborhood) lines.push(` Bairro: ${order.neighborhood.name}\n`);
+    lines.push(DASHED);
   }
 
   // Items with prices
+  lines.push(CENTER + BOLD_ON + 'ITENS\n' + BOLD_OFF);
+  lines.push(LEFT);
+  lines.push(DASHED);
+
   for (const item of order.items) {
     const itemTotal = (item.product.price + item.selectedAddons.reduce((a, ad) => a + ad.price, 0)) * item.quantity;
-    lines.push(`${item.quantity}x ${item.product.name}`);
-    lines.push(`${(' R$' + itemTotal.toFixed(2)).padStart(32 - (item.quantity.toString().length + 2 + item.product.name.length))}\n`);
+    lines.push(BOLD_ON);
+    lines.push(padLine(` ${item.quantity}x ${item.product.name}`, `R$${itemTotal.toFixed(2)}`));
+    lines.push(BOLD_OFF);
     if (item.selectedAddons.length > 0) {
-      lines.push(`   + ${item.selectedAddons.map(a => a.name).join(', ')}\n`);
+      lines.push(`    + ${item.selectedAddons.map(a => a.name).join(', ')}\n`);
     }
     if (item.observation) {
-      lines.push(`   OBS: ${item.observation}\n`);
+      lines.push(`    * OBS: ${item.observation}\n`);
     }
   }
 
-  lines.push('--------------------------------\n');
+  lines.push(DASHED);
 
   if (order.observation) {
-    lines.push(`OBS: ${order.observation}\n`);
-    lines.push('--------------------------------\n');
+    lines.push(BOLD_ON + 'OBS GERAL:\n' + BOLD_OFF);
+    lines.push(` ${order.observation}\n`);
+    lines.push(DASHED);
   }
 
   // Totals
-  const pad = (label: string, val: string) => label + val.padStart(32 - label.length) + '\n';
-  lines.push(pad('Subtotal:', `R$ ${order.subtotal.toFixed(2)}`));
+  lines.push(padLine(' Subtotal:', `R$${order.subtotal.toFixed(2)}`));
   if (order.deliveryFee > 0) {
-    lines.push(pad('Taxa entrega:', `R$ ${order.deliveryFee.toFixed(2)}`));
+    lines.push(padLine(' Taxa entrega:', `R$${order.deliveryFee.toFixed(2)}`));
   }
-  lines.push(ESC + 'E' + '\x01');
-  lines.push(pad('TOTAL:', `R$ ${order.total.toFixed(2)}`));
-  lines.push(ESC + 'E' + '\x00');
+  lines.push(LINE);
+  lines.push(CENTER + BOLD_ON + DOUBLE);
+  lines.push(`TOTAL: R$${order.total.toFixed(2)}\n`);
+  lines.push(NORMAL + BOLD_OFF);
+  lines.push(LINE);
 
-  lines.push('\n\n\n');
-  lines.push(GS + 'V' + '\x00');
+  lines.push(CENTER);
+  lines.push('\nObrigado pela preferencia!\n');
+  lines.push(FEED);
+  lines.push(CUT);
 
   return lines.join('');
 }
