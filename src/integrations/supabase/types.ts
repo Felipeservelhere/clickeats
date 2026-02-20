@@ -14,7 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      addons: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          price: number
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          price?: number
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addons_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      neighborhoods: {
+        Row: {
+          created_at: string
+          fee: number
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          fee?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          fee?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price: number
+          sort_order: number
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price?: number
+          sort_order?: number
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          number: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          number: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          number?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

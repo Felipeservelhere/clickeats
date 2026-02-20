@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { categories, products } from '@/data/menu';
-import { CartItem, Product, Order } from '@/types/order';
+import { useCategories } from '@/hooks/useCategories';
+import { useProducts } from '@/hooks/useProducts';
+import { CartItem, Product, Order, Addon } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
 import { AddonsModal } from '@/components/order/AddonsModal';
 import { CartBar } from '@/components/order/CartBar';
@@ -10,14 +11,24 @@ import { PrintModal } from '@/components/order/PrintModal';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-// Sort products by price within each category
-const sortedProducts = [...products].sort((a, b) => a.price - b.price);
-
 const NewOrder = () => {
   const navigate = useNavigate();
   const { addOrder } = useOrders();
+  const { data: dbCategories = [] } = useCategories();
+  const { data: dbProducts = [] } = useProducts();
 
-  const [activeCategory, setActiveCategory] = useState(categories[0]?.id || '');
+  // Map DB data to component format
+  const categories = dbCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon }));
+  const products: Product[] = dbProducts.map(p => ({
+    id: p.id,
+    name: p.name,
+    price: Number(p.price),
+    categoryId: p.category_id,
+    addons: (p.addons || []).map((a): Addon => ({ id: a.id, name: a.name, price: Number(a.price) })),
+  }));
+  const sortedProducts = [...products].sort((a, b) => a.price - b.price);
+
+  const [activeCategory, setActiveCategory] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [addonsProduct, setAddonsProduct] = useState<Product | null>(null);
   const [editingItem, setEditingItem] = useState<CartItem | undefined>();
@@ -31,14 +42,18 @@ const NewOrder = () => {
   const tabsRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Scroll spy: update active category based on scroll position
+  // Set initial active category
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].id);
+    }
+  }, [categories, activeCategory]);
+
   const handleScroll = useCallback(() => {
     if (isScrolling) return;
     const container = scrollContainerRef.current;
     if (!container) return;
-
-    const scrollTop = container.scrollTop + 120; // offset for sticky header
-
+    const scrollTop = container.scrollTop + 120;
     for (const cat of categories) {
       const el = sectionRefs.current[cat.id];
       if (el) {
@@ -50,7 +65,7 @@ const NewOrder = () => {
         }
       }
     }
-  }, [isScrolling]);
+  }, [isScrolling, categories]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -59,72 +74,39 @@ const NewOrder = () => {
     return () => container.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Scroll active tab into view
   useEffect(() => {
     const tabEl = document.getElementById(`cat-tab-${activeCategory}`);
-    if (tabEl) {
-      tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
+    if (tabEl) tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [activeCategory]);
 
   const scrollToCategory = (catId: string) => {
     setActiveCategory(catId);
     setIsScrolling(true);
-    const el = sectionRefs.current[catId];
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    sectionRefs.current[catId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(() => setIsScrolling(false), 600);
   };
 
-  const handleProductClick = (product: Product) => {
-    setEditingItem(undefined);
-    setAddonsProduct(product);
-  };
-
+  const handleProductClick = (product: Product) => { setEditingItem(undefined); setAddonsProduct(product); };
   const handleAddToCart = (item: CartItem) => {
-    if (editingItem) {
-      setCart(prev => prev.map(i => i.cartId === editingItem.cartId ? item : i));
-    } else {
-      setCart(prev => [...prev, item]);
-    }
-    setAddonsProduct(null);
-    setEditingItem(undefined);
+    if (editingItem) setCart(prev => prev.map(i => i.cartId === editingItem.cartId ? item : i));
+    else setCart(prev => [...prev, item]);
+    setAddonsProduct(null); setEditingItem(undefined);
   };
-
-  const handleEditItem = (item: CartItem) => {
-    setEditingItem(item);
-    setAddonsProduct(item.product);
-  };
-
-  const handleRemoveItem = (cartId: string) => {
-    setCart(prev => prev.filter(i => i.cartId !== cartId));
-  };
+  const handleEditItem = (item: CartItem) => { setEditingItem(item); setAddonsProduct(item.product); };
+  const handleRemoveItem = (cartId: string) => setCart(prev => prev.filter(i => i.cartId !== cartId));
 
   const handleFinalize = (order: Order) => {
-    addOrder(order);
-    setCreatedOrder(order);
-    setShowCheckout(false);
-    setShowKitchenPrint(true);
+    addOrder(order); setCreatedOrder(order); setShowCheckout(false); setShowKitchenPrint(true);
   };
-
   const handleKitchenPrintClose = () => {
     setShowKitchenPrint(false);
-    if (createdOrder && (createdOrder.type === 'entrega' || createdOrder.type === 'retirada')) {
-      setShowDeliveryPrint(true);
-    } else {
-      navigate('/');
-    }
+    if (createdOrder && (createdOrder.type === 'entrega' || createdOrder.type === 'retirada')) setShowDeliveryPrint(true);
+    else navigate('/');
   };
-
-  const handleDeliveryPrintClose = () => {
-    setShowDeliveryPrint(false);
-    navigate('/');
-  };
+  const handleDeliveryPrintClose = () => { setShowDeliveryPrint(false); navigate('/'); };
 
   return (
     <div className="h-[calc(100vh-3rem)] flex flex-col bg-background">
-      {/* Header with back + category tabs */}
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border">
         <div className="flex items-center gap-2 px-4 py-2">
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate('/')}>
@@ -132,8 +114,6 @@ const NewOrder = () => {
           </Button>
           <h1 className="font-heading font-bold text-lg shrink-0">Novo Pedido</h1>
         </div>
-
-        {/* Category tabs */}
         <div ref={tabsRef} className="flex gap-1 px-4 pb-2 overflow-x-auto scrollbar-hide">
           {categories.map(cat => (
             <button
@@ -153,18 +133,12 @@ const NewOrder = () => {
         </div>
       </div>
 
-      {/* Scrollable products area */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-24 px-4">
         {categories.map(cat => {
           const catProducts = sortedProducts.filter(p => p.categoryId === cat.id);
           if (catProducts.length === 0) return null;
-
           return (
-            <div
-              key={cat.id}
-              ref={el => { sectionRefs.current[cat.id] = el; }}
-              className="pt-4"
-            >
+            <div key={cat.id} ref={el => { sectionRefs.current[cat.id] = el; }} className="pt-4">
               <h2 className="font-heading font-bold text-base text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
                 <span>{cat.icon}</span> {cat.name}
               </h2>
@@ -178,14 +152,10 @@ const NewOrder = () => {
                     <div>
                       <h3 className="font-semibold">{product.name}</h3>
                       {product.addons.length > 0 && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {product.addons.length} adicionais
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{product.addons.length} adicionais</p>
                       )}
                     </div>
-                    <span className="font-heading font-bold text-primary ml-4 whitespace-nowrap">
-                      R$ {product.price.toFixed(2)}
-                    </span>
+                    <span className="font-heading font-bold text-primary ml-4 whitespace-nowrap">R$ {product.price.toFixed(2)}</span>
                   </button>
                 ))}
               </div>
@@ -194,29 +164,9 @@ const NewOrder = () => {
         })}
       </div>
 
-      {/* Modals */}
-      <AddonsModal
-        product={addonsProduct}
-        existingItem={editingItem}
-        open={!!addonsProduct}
-        onClose={() => { setAddonsProduct(null); setEditingItem(undefined); }}
-        onConfirm={handleAddToCart}
-      />
-
-      <CartBar
-        items={cart}
-        onEditItem={handleEditItem}
-        onRemoveItem={handleRemoveItem}
-        onCheckout={() => setShowCheckout(true)}
-      />
-
-      <CheckoutSheet
-        open={showCheckout}
-        onClose={() => setShowCheckout(false)}
-        items={cart}
-        onFinalize={handleFinalize}
-      />
-
+      <AddonsModal product={addonsProduct} existingItem={editingItem} open={!!addonsProduct} onClose={() => { setAddonsProduct(null); setEditingItem(undefined); }} onConfirm={handleAddToCart} />
+      <CartBar items={cart} onEditItem={handleEditItem} onRemoveItem={handleRemoveItem} onCheckout={() => setShowCheckout(true)} />
+      <CheckoutSheet open={showCheckout} onClose={() => setShowCheckout(false)} items={cart} onFinalize={handleFinalize} />
       <PrintModal order={createdOrder} type="kitchen" open={showKitchenPrint} onClose={handleKitchenPrintClose} />
       <PrintModal order={createdOrder} type="delivery" open={showDeliveryPrint} onClose={handleDeliveryPrintClose} />
     </div>
