@@ -26,13 +26,17 @@ const NewOrder = () => {
 
   // Map DB data to component format
   const categories = dbCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon }));
-  const products: Product[] = dbProducts.map(p => ({
-    id: p.id,
-    name: p.name,
-    price: Number(p.price),
-    categoryId: p.category_id,
-    addons: (p.addons || []).map((a): Addon => ({ id: a.id, name: a.name, price: Number(a.price) })),
-  }));
+  const products: Product[] = dbProducts.map(p => {
+    const cat = dbCategories.find(c => c.id === p.category_id);
+    return {
+      id: p.id,
+      name: p.name,
+      price: Number(p.price),
+      categoryId: p.category_id,
+      categoryName: cat?.name,
+      addons: (p.addons || []).map((a): Addon => ({ id: a.id, name: a.name, price: Number(a.price) })),
+    };
+  });
   const sortedProducts = [...products].sort((a, b) => a.price - b.price);
 
   const [activeCategory, setActiveCategory] = useState('');

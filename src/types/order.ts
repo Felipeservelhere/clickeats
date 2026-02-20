@@ -12,6 +12,7 @@ export interface Product {
   name: string;
   price: number;
   categoryId: string;
+  categoryName?: string;
   description?: string;
   addons: Addon[];
 }
