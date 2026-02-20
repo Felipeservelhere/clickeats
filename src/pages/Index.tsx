@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOrders } from '@/contexts/OrderContext';
+import { useTables } from '@/hooks/useTables';
 import { OrderCard } from '@/components/order/OrderCard';
 import { PrintModal } from '@/components/order/PrintModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Order, OrderType } from '@/types/order';
-import { defaultTables } from '@/data/menu';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Flame, MessageCircle } from 'lucide-react';
 
@@ -20,7 +20,10 @@ const typeFilters: { value: OrderType | 'all'; label: string }[] = [
 const Index = () => {
   const navigate = useNavigate();
   const { orders, updateOrder } = useOrders();
+  const { data: dbTables = [] } = useTables();
   const isMobile = useIsMobile();
+
+  const activeTables = dbTables.filter(t => t.active).map(t => t.number);
 
   const [filter, setFilter] = useState<OrderType | 'all'>('all');
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
@@ -78,7 +81,7 @@ const Index = () => {
       <div className="bg-background p-4">
         <h1 className="font-heading font-bold text-xl mb-4">Mesas</h1>
         <div className="grid grid-cols-4 gap-3">
-          {defaultTables.map(num => {
+          {activeTables.map(num => {
             const occupied = occupiedTables.has(num);
             const order = tableOrders.find(o => o.tableNumber === num);
             return (

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CartItem, Order, OrderType, Neighborhood } from '@/types/order';
-import { neighborhoods } from '@/data/menu';
+import { useNeighborhoods } from '@/hooks/useNeighborhoods';
 import { useOrders } from '@/contexts/OrderContext';
 import { MapPin, Truck, Store, UtensilsCrossed } from 'lucide-react';
 
@@ -30,6 +30,8 @@ const typeIcons: Record<OrderType, React.ReactNode> = {
 
 export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutSheetProps) {
   const { getNextNumber } = useOrders();
+  const { data: neighborhoods = [] } = useNeighborhoods();
+
   const [orderType, setOrderType] = useState<OrderType>('entrega');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -73,14 +75,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
   };
 
   const resetForm = () => {
-    setCustomerName('');
-    setCustomerPhone('');
-    setAddress('');
-    setAddressNumber('');
-    setReference('');
-    setSelectedNeighborhood(null);
-    setMesaReference('');
-    setObservation('');
+    setCustomerName(''); setCustomerPhone(''); setAddress(''); setAddressNumber('');
+    setReference(''); setSelectedNeighborhood(null); setMesaReference(''); setObservation('');
   };
 
   return (
@@ -94,18 +90,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
           {/* Customer Info */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Cliente</h4>
-            <Input
-              placeholder="Nome do cliente"
-              value={customerName}
-              onChange={e => setCustomerName(e.target.value)}
-              className="bg-secondary/50"
-            />
-            <Input
-              placeholder="Telefone"
-              value={customerPhone}
-              onChange={e => setCustomerPhone(e.target.value)}
-              className="bg-secondary/50"
-            />
+            <Input placeholder="Nome do cliente" value={customerName} onChange={e => setCustomerName(e.target.value)} className="bg-secondary/50" />
+            <Input placeholder="Telefone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="bg-secondary/50" />
           </div>
 
           {/* Order Type */}
@@ -135,14 +121,17 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
               <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                 <MapPin className="h-4 w-4" /> Endereço
               </h4>
-              <Select onValueChange={v => setSelectedNeighborhood(neighborhoods.find(n => n.id === v) || null)}>
+              <Select onValueChange={v => {
+                const n = neighborhoods.find(n => n.id === v);
+                setSelectedNeighborhood(n ? { id: n.id, name: n.name, fee: Number(n.fee) } : null);
+              }}>
                 <SelectTrigger className="bg-secondary/50">
                   <SelectValue placeholder="Selecione o bairro" />
                 </SelectTrigger>
                 <SelectContent>
                   {neighborhoods.map(n => (
                     <SelectItem key={n.id} value={n.id}>
-                      {n.name} - R$ {n.fee.toFixed(2)}
+                      {n.name} - R$ {Number(n.fee).toFixed(2)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -158,25 +147,14 @@ export function CheckoutSheet({ open, onClose, items, onFinalize }: CheckoutShee
           {orderType === 'mesa' && (
             <div className="space-y-3 animate-fade-in">
               <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Mesa</h4>
-              <Input
-                placeholder="Mesa ou ponto de referência"
-                value={mesaReference}
-                onChange={e => setMesaReference(e.target.value)}
-                className="bg-secondary/50"
-              />
+              <Input placeholder="Mesa ou ponto de referência" value={mesaReference} onChange={e => setMesaReference(e.target.value)} className="bg-secondary/50" />
             </div>
           )}
 
           {/* Observation */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Observação</h4>
-            <Textarea
-              value={observation}
-              onChange={e => setObservation(e.target.value)}
-              placeholder="Observações do pedido..."
-              className="bg-secondary/50 resize-none"
-              rows={2}
-            />
+            <Textarea value={observation} onChange={e => setObservation(e.target.value)} placeholder="Observações do pedido..." className="bg-secondary/50 resize-none" rows={2} />
           </div>
 
           {/* Totals */}
