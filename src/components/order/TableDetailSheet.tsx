@@ -32,7 +32,7 @@ export function TableDetailSheet({ order, open, onClose }: TableDetailSheetProps
       cartId: crypto.randomUUID(),
       quantity: 1,
     };
-    const updated = addItemsToTableOrder(order.tableReference, [newItem], item.product.price + item.selectedAddons.reduce((a, ad) => a + ad.price, 0));
+    const updated = await addItemsToTableOrder(order.tableReference, [newItem], item.product.price + item.selectedAddons.reduce((a, ad) => a + ad.price, 0));
     if (updated) {
       // Auto-print just this new item
       const hasPrinter = !!getSavedPrinter();

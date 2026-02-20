@@ -72,4 +72,6 @@ export interface Order {
   paymentMethod?: PaymentMethod;
   changeFor?: number;
   createdAt: string;
+  createdBy?: string;
+  createdByName?: string;
 }

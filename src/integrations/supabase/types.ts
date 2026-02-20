@@ -199,6 +199,89 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          address: string | null
+          address_number: string | null
+          change_for: number | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_fee: number
+          id: string
+          items: Json
+          neighborhood: Json | null
+          number: number
+          observation: string | null
+          payment_method: string | null
+          reference: string | null
+          status: string
+          subtotal: number
+          table_number: number | null
+          table_reference: string | null
+          total: number
+          type: string
+        }
+        Insert: {
+          address?: string | null
+          address_number?: string | null
+          change_for?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          neighborhood?: Json | null
+          number: number
+          observation?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          status?: string
+          subtotal?: number
+          table_number?: number | null
+          table_reference?: string | null
+          total?: number
+          type: string
+        }
+        Update: {
+          address?: string | null
+          address_number?: string | null
+          change_for?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          neighborhood?: Json | null
+          number?: number
+          observation?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          status?: string
+          subtotal?: number
+          table_number?: number | null
+          table_reference?: string | null
+          total?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pizza_borders: {
         Row: {
           created_at: string
