@@ -360,9 +360,13 @@ export function buildDeliveryReceipt(order: {
 
     html += `<div class="item">FORMA DE PGTO: ${methodLabel}</div>`;
 
-    if (order.paymentMethod === 'dinheiro' && order.changeFor) {
-      const troco = order.changeFor - order.total;
-      html += `<div class="item">TROCO PARA: R$ ${order.changeFor.toFixed(2).replace('.', ',')} (TROCO: R$ ${troco.toFixed(2).replace('.', ',')})</div>`;
+    if (order.paymentMethod === 'dinheiro') {
+      if (order.changeFor && order.changeFor > order.total) {
+        const troco = order.changeFor - order.total;
+        html += `<div class="item">TROCO PARA: R$ ${order.changeFor.toFixed(2).replace('.', ',')} (TROCO: R$ ${troco.toFixed(2).replace('.', ',')})</div>`;
+      } else {
+        html += `<div class="item">NÃO PRECISA DE TROCO</div>`;
+      }
     }
 
     if (order.paymentMethod === 'pix') {
