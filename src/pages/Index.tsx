@@ -4,11 +4,14 @@ import { useOrders } from '@/contexts/OrderContext';
 import { useTables } from '@/hooks/useTables';
 import { OrderCard } from '@/components/order/OrderCard';
 import { PrintModal } from '@/components/order/PrintModal';
+import { TableDetailSheet } from '@/components/order/TableDetailSheet';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Order, OrderType } from '@/types/order';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Flame, MessageCircle } from 'lucide-react';
+import { printRaw, buildKitchenReceipt, getSavedPrinter } from '@/lib/qz-print';
+import { toast } from 'sonner';
 
 const typeFilters: { value: OrderType | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -30,21 +33,39 @@ const Index = () => {
   const [printType, setPrintType] = useState<'kitchen' | 'delivery'>('kitchen');
   const [showPrint, setShowPrint] = useState(false);
   const [completeOrder, setCompleteOrder] = useState<Order | null>(null);
+  const [tableDetailOrder, setTableDetailOrder] = useState<Order | null>(null);
 
   const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.type === filter);
   const activeOrders = filteredOrders.filter(o => o.status !== 'completed');
   const completedOrders = filteredOrders.filter(o => o.status === 'completed');
 
-  const handleKitchenPrint = (order: Order) => {
-    setPrintOrder(order);
-    setPrintType('kitchen');
-    setShowPrint(true);
+  const handleKitchenPrint = async (order: Order) => {
+    const hasPrinter = !!getSavedPrinter();
+    if (hasPrinter) {
+      try {
+        const data = buildKitchenReceipt(order);
+        const ok = await printRaw(data);
+        if (ok) toast.success('Impresso!');
+        else toast.error('Falha na impressão');
+      } catch { toast.error('Erro na impressão'); }
+    } else {
+      setPrintOrder(order);
+      setPrintType('kitchen');
+      setShowPrint(true);
+    }
   };
 
   const handleDeliveryPrint = (order: Order) => {
     setPrintOrder(order);
     setPrintType('delivery');
     setShowPrint(true);
+  };
+
+  const handleOrderClick = (order: Order) => {
+    if (order.type === 'mesa') {
+      setTableDetailOrder(order);
+      return;
+    }
   };
 
   const handleComplete = (order: Order) => {
@@ -87,16 +108,19 @@ const Index = () => {
             return (
               <button
                 key={num}
-                onClick={() => navigate('/novo-pedido')}
+                onClick={() => {
+                  if (occupied && order) setTableDetailOrder(order);
+                  else navigate('/novo-pedido');
+                }}
                 className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
                   occupied
-                    ? 'order-border-mesa bg-card order-type-mesa'
+                    ? 'border-destructive bg-destructive/10'
                     : 'border-border bg-card hover:border-primary/50'
                 }`}
               >
-                <span className={`font-heading font-bold text-lg ${occupied ? '' : 'text-foreground'}`}>{num}</span>
+                <span className={`font-heading font-bold text-lg ${occupied ? 'text-destructive' : 'text-foreground'}`}>{num}</span>
                 {order && (
-                  <span className="text-[10px] opacity-80">
+                  <span className="text-[10px] text-destructive/80">
                     {order.items.reduce((s, i) => s + i.quantity, 0)} itens
                   </span>
                 )}
@@ -104,6 +128,7 @@ const Index = () => {
             );
           })}
         </div>
+        <TableDetailSheet order={tableDetailOrder} open={!!tableDetailOrder} onClose={() => setTableDetailOrder(null)} />
       </div>
     );
   }
@@ -154,6 +179,7 @@ const Index = () => {
               <OrderCard
                 key={order.id}
                 order={order}
+                onClick={order.type === 'mesa' ? () => handleOrderClick(order) : undefined}
                 onKitchenPrint={() => handleKitchenPrint(order)}
                 onDeliveryPrint={() => handleDeliveryPrint(order)}
                 onComplete={() => handleComplete(order)}
@@ -187,6 +213,9 @@ const Index = () => {
         open={showPrint}
         onClose={() => setShowPrint(false)}
       />
+
+      {/* Table Detail */}
+      <TableDetailSheet order={tableDetailOrder} open={!!tableDetailOrder} onClose={() => setTableDetailOrder(null)} />
 
       {/* Notify Modal */}
       <Dialog open={!!completeOrder} onOpenChange={(v) => !v && setCompleteOrder(null)}>

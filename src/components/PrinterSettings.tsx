@@ -5,9 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { getPrinters, savePrinter, getSavedPrinter, setCertificate, connectQZ } from '@/lib/qz-print';
+import { getPrinters, savePrinter, getSavedPrinter, setCertificate, connectQZ, printRaw } from '@/lib/qz-print';
 import { toast } from 'sonner';
-import { Printer, Settings2, Check, Wifi, WifiOff } from 'lucide-react';
+import { Printer, Settings2, Check, Wifi, WifiOff, FileText } from 'lucide-react';
 
 interface PrinterSettingsProps {
   open: boolean;
@@ -138,6 +138,41 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
             </div>
             <Switch checked={autoPrint} onCheckedChange={handleAutoChange} />
           </div>
+
+          {/* Test print */}
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            disabled={!selectedPrinter || !connected}
+            onClick={async () => {
+              const ESC = '\x1B';
+              const GS = '\x1D';
+              const data = [
+                ESC + '@',
+                ESC + 'a' + '\x01',
+                ESC + 'E' + '\x01',
+                GS + '!' + '\x11',
+                'TESTE DE IMPRESSAO\n',
+                GS + '!' + '\x00',
+                ESC + 'E' + '\x00',
+                '--------------------------------\n',
+                'Impressora: ' + selectedPrinter + '\n',
+                'Data: ' + new Date().toLocaleString('pt-BR') + '\n',
+                '--------------------------------\n',
+                ESC + 'a' + '\x01',
+                'Se voce esta lendo isso,\n',
+                'a impressora esta funcionando!\n',
+                '--------------------------------\n',
+                '\n\n\n',
+                GS + 'V' + '\x00',
+              ].join('');
+              const ok = await printRaw(data, selectedPrinter);
+              if (ok) toast.success('Teste impresso com sucesso!');
+              else toast.error('Falha no teste. Verifique o QZ Tray.');
+            }}
+          >
+            <FileText className="h-4 w-4" /> Teste de Impressão
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
