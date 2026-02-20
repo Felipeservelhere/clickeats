@@ -6,11 +6,12 @@ import { OrderCard } from '@/components/order/OrderCard';
 import { PrintModal } from '@/components/order/PrintModal';
 import { TableDetailSheet } from '@/components/order/TableDetailSheet';
 import { OrderDetailSheet } from '@/components/order/OrderDetailSheet';
+import { TableSelectorModal } from '@/components/order/TableSelectorModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Order, OrderType } from '@/types/order';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Flame, MessageCircle } from 'lucide-react';
+import { Plus, Flame, MessageCircle, UtensilsCrossed } from 'lucide-react';
 import { printRaw, buildKitchenReceipt, getSavedPrinter } from '@/lib/qz-print';
 import { toast } from 'sonner';
 
@@ -36,7 +37,9 @@ const Index = () => {
   const [completeOrder, setCompleteOrder] = useState<Order | null>(null);
   const [tableDetailOrder, setTableDetailOrder] = useState<Order | null>(null);
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
+  const [showTableSelector, setShowTableSelector] = useState(false);
   const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.type === filter);
+  const tableOrders = orders.filter(o => o.type === 'mesa' && o.status !== 'completed');
   const activeOrders = filteredOrders.filter(o => o.status !== 'completed');
   const completedOrders = filteredOrders.filter(o => o.status === 'completed');
 
@@ -159,9 +162,14 @@ const Index = () => {
     <div className="bg-background p-4">
       <div className="flex items-center justify-between max-w-6xl mx-auto mb-6">
         <h1 className="font-heading font-bold text-2xl">Pedidos</h1>
-        <Button onClick={() => navigate('/novo-pedido')} className="gap-2 font-semibold">
-          <Plus className="h-4 w-4" /> Novo Pedido
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowTableSelector(true)} className="gap-2 font-semibold">
+            <UtensilsCrossed className="h-4 w-4" /> Mesas
+          </Button>
+          <Button onClick={() => navigate('/novo-pedido')} className="gap-2 font-semibold">
+            <Plus className="h-4 w-4" /> Novo Pedido
+          </Button>
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto">
@@ -269,6 +277,14 @@ const Index = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Table Selector */}
+      <TableSelectorModal
+        open={showTableSelector}
+        onClose={() => setShowTableSelector(false)}
+        activeTables={activeTables}
+        tableOrders={tableOrders}
+        onSelectOccupied={setTableDetailOrder}
+      />
     </div>
   );
 };
