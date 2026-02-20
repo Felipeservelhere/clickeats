@@ -74,6 +74,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   // Address selection
   const { data: customerAddresses = [] } = useCustomerAddresses(selectedCustomer?.id || null);
   const [showAddressSelector, setShowAddressSelector] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showNewAddressModal, setShowNewAddressModal] = useState(false);
   const [newAddressLabel, setNewAddressLabel] = useState('');
   const [pendingAddressData, setPendingAddressData] = useState<{address: string; addressNumber: string; reference: string; neighborhoodId: string; neighborhoodName: string; neighborhoodFee: number} | null>(null);
@@ -85,17 +86,13 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
     }
   }, [forcedTableNumber, isMesaMode]);
 
-  // When customer is selected and has addresses, show address selector
+  // When customer is selected and has addresses, auto-fill default
   useEffect(() => {
     if (selectedCustomer && customerAddresses.length > 0 && orderType === 'entrega') {
       // Auto-fill with default address (or first one)
       const defaultAddr = customerAddresses.find(a => a.is_default) || customerAddresses[0];
-      if (defaultAddr) {
+      if (defaultAddr && !selectedAddressId) {
         handleSelectAddress(defaultAddr);
-      }
-      // If multiple addresses, also show selector
-      if (customerAddresses.length > 1) {
-        setShowAddressSelector(true);
       }
     }
   }, [selectedCustomer, customerAddresses, orderType]);
@@ -116,6 +113,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
     setAddress(addr.address);
     setAddressNumber(addr.address_number || '');
     setReference(addr.reference || '');
+    setSelectedAddressId(addr.id);
     if (addr.neighborhood_id) {
       const n = neighborhoods.find(n => n.id === addr.neighborhood_id);
       if (n) {
@@ -125,7 +123,6 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
     } else if (addr.neighborhood_name) {
       setSelectedNeighborhood({ id: '', name: addr.neighborhood_name, fee: addr.neighborhood_fee });
     }
-    setShowAddressSelector(false);
   };
 
   const handleCheckNewAddress = () => {
@@ -153,7 +150,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const handleSaveNewAddress = async () => {
     if (!selectedCustomer || !pendingAddressData) return;
     try {
-      await createAddress.mutateAsync({
+      const newAddr = await createAddress.mutateAsync({
         customer_id: selectedCustomer.id,
         label: newAddressLabel.trim() || 'Novo endereço',
         address: pendingAddressData.address,
@@ -164,6 +161,9 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
         neighborhood_fee: pendingAddressData.neighborhoodFee,
       });
       toast.success('Endereço salvo!');
+      if (newAddr?.id) {
+        setSelectedAddressId(newAddr.id);
+      }
       setShowNewAddressModal(false);
       setNewAddressLabel('');
       setPendingAddressData(null);
@@ -251,7 +251,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const resetForm = () => {
     setCustomerName(''); setCustomerPhone(''); setAddress(''); setAddressNumber('');
     setReference(''); setSelectedNeighborhood(null); setSelectedNeighborhoodId(''); setMesaReference(''); setObservation('');
-    setPaymentMethod('dinheiro'); setChangeFor(''); setSelectedCustomer(null); setSelectedTableNum(null);
+    setPaymentMethod('dinheiro'); setChangeFor(''); setSelectedCustomer(null); setSelectedTableNum(null); setSelectedAddressId(null);
   };
 
   const showTypeSelector = !isMesaMode;
@@ -315,8 +315,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
               </div>
             )}
 
-            {/* Address selector for returning customers */}
-            {orderType === 'entrega' && showAddressSelector && customerAddresses.length > 0 && (
+            {/* Address selector for returning customers - always visible */}
+            {orderType === 'entrega' && customerAddresses.length > 0 && (
               <div className="space-y-2 animate-fade-in">
                 <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                   <Home className="h-4 w-4" /> Endereços salvos
@@ -326,9 +326,13 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
                     <button
                       key={addr.id}
                       onClick={() => handleSelectAddress(addr)}
-                      className="w-full flex items-start gap-3 p-3 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 transition-colors text-left"
+                      className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 transition-colors text-left ${
+                        selectedAddressId === addr.id
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-secondary/30 hover:bg-secondary/50'
+                      }`}
                     >
-                      <Home className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <Home className={`h-4 w-4 mt-0.5 shrink-0 ${selectedAddressId === addr.id ? 'text-primary' : 'text-muted-foreground'}`} />
                       <div className="min-w-0">
                         <p className="font-semibold text-sm">{addr.label} {addr.is_default && <span className="text-xs text-primary">(Padrão)</span>}</p>
                         <p className="text-xs text-muted-foreground truncate">{addr.address}{addr.address_number ? `, ${addr.address_number}` : ''}</p>
