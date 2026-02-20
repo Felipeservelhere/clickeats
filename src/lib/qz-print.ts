@@ -126,18 +126,23 @@ const RECEIPT_STYLE = `
   }
   .logo { text-align: center; margin-bottom: 4px; }
   .logo img { max-width: 180px; margin: 0 auto; filter: invert(1) brightness(0); }
-  .tipo { font-size: 24px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
-  .data { font-size: 14px; font-weight: bold; margin-bottom: 4px; text-align: center; }
-  .info { font-size: 16px; font-weight: bold; margin-bottom: 4px; text-align: center; }
-  .grupo { background: #000; color: #fff; padding: 6px 8px; margin: 10px 0 6px; font-weight: 900; font-size: 18px; text-align: center; }
-  .item { margin: 4px 0; font-size: 18px; font-weight: 900; padding-left: 4px; word-wrap: break-word; overflow-wrap: break-word; }
-  .adicional { font-size: 16px; font-weight: bold; padding-left: 20px; word-wrap: break-word; }
-  .obs { font-size: 16px; font-weight: 900; padding-left: 20px; word-wrap: break-word; }
-  .sabor { font-size: 16px; font-weight: bold; padding-left: 16px; margin: 2px 0; }
-  .sem { font-size: 16px; font-weight: 900; padding-left: 28px; color: #000; }
-  .linha { border-top: 3px solid #000; margin: 10px 0; }
-  .total { font-weight: 900; font-size: 26px; text-align: center; margin-top: 4px; }
-  .subtotal { font-size: 18px; font-weight: bold; text-align: center; }
+  .tipo { font-size: 20px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
+  .data { font-size: 14px; font-weight: bold; margin-bottom: 2px; text-align: center; }
+  .info { font-size: 16px; font-weight: bold; margin-bottom: 2px; text-align: left; }
+  .info-label { font-size: 16px; font-weight: 900; margin-bottom: 2px; text-align: left; }
+  .grupo { background: #000; color: #fff; padding: 4px 8px; margin: 6px 0 4px; font-weight: 900; font-size: 16px; text-align: center; }
+  .item { margin: 3px 0; font-size: 16px; font-weight: 900; padding-left: 4px; word-wrap: break-word; overflow-wrap: break-word; }
+  .adicional { font-size: 14px; font-weight: bold; padding-left: 20px; word-wrap: break-word; }
+  .obs { font-size: 14px; font-weight: 900; padding-left: 20px; word-wrap: break-word; }
+  .sabor { font-size: 14px; font-weight: bold; padding-left: 16px; margin: 2px 0; }
+  .sem { font-size: 14px; font-weight: 900; padding-left: 28px; color: #000; }
+  .linha { border-top: 2px solid #000; margin: 6px 0; }
+  .linha-tracejada { border-top: 2px dashed #000; margin: 6px 0; }
+  .total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; margin: 2px 0; padding: 0 4px; }
+  .total-row.grande { font-size: 22px; }
+  .total { font-weight: 900; font-size: 22px; text-align: center; margin-top: 4px; }
+  .subtotal { font-size: 16px; font-weight: bold; text-align: center; }
+  .pgto { font-size: 14px; font-weight: 900; padding-left: 4px; margin: 2px 0; }
 </style>
 `;
 
@@ -300,25 +305,27 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="tipo">${typeLabel}</div>`;
   html += `<div class="data">${date} ${time}</div>`;
 
+  // Cliente section
+  html += `<div class="linha-tracejada"></div>`;
   if (order.customerName) {
-    html += `<div class="info">Cliente: ${order.customerName}</div>`;
+    html += `<div class="info-label">CLIENTE:</div>`;
+    html += `<div class="info">${order.customerName}</div>`;
+  }
+  if (order.type === 'entrega') {
+    if (order.address) {
+      let addr = order.address;
+      if (order.addressNumber) addr += `, ${order.addressNumber}`;
+      if (order.neighborhood) addr += ` - ${order.neighborhood.name}`;
+      html += `<div class="info">${addr}</div>`;
+    }
+    if (order.reference) html += `<div class="info">Ref: ${order.reference}</div>`;
   }
   if (order.customerPhone) {
     html += `<div class="info">Tel: ${order.customerPhone}</div>`;
   }
+  html += `<div class="linha-tracejada"></div>`;
 
-  if (order.type === 'entrega') {
-    if (order.address) {
-      html += `<div class="info"><b>Endereço</b><br>${order.address}${order.addressNumber ? ', ' + order.addressNumber : ''}`;
-      if (order.neighborhood) html += ` — ${order.neighborhood.name}`;
-      html += `</div>`;
-    }
-    if (order.reference) html += `<div class="info">Ref: ${order.reference}</div>`;
-  }
-
-  html += `<div class="linha"></div>`;
-
-  // Group items by category
+  // Items by category
   const grouped = groupItemsByCategory(order.items);
   for (const group of grouped) {
     html += `<div class="grupo">${group.categoryName}</div>`;
@@ -328,9 +335,9 @@ export function buildDeliveryReceipt(order: {
       } else {
         const itemTotal = ((item.product as any).price + item.selectedAddons.reduce((a: number, ad: any) => a + (ad.price || 0), 0)) * item.quantity;
         if (order.type === 'mesa') {
-          html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()}</div>`;
+          html += `<div class="item">${item.quantity}x  ${item.product.name.toUpperCase()}</div>`;
         } else {
-          html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
+          html += `<div class="item">${item.quantity}x  ${item.product.name.toUpperCase()}</div>`;
         }
         if (item.selectedAddons.length > 0) {
           for (const addon of item.selectedAddons) {
@@ -338,46 +345,47 @@ export function buildDeliveryReceipt(order: {
           }
         }
         if (item.observation) {
-          html += `<div class="obs">OBS: ${item.observation}</div>`;
+          html += `<div class="obs">Obs: ${item.observation}</div>`;
         }
       }
     }
   }
 
-  html += `<div class="linha"></div>`;
+  html += `<div class="linha-tracejada"></div>`;
 
   if (order.observation) {
-    html += `<div class="item"><b>Obs:</b> ${order.observation}</div>`;
-    html += `<div class="linha"></div>`;
+    html += `<div class="obs">Obs: ${order.observation}</div>`;
+    html += `<div class="linha-tracejada"></div>`;
   }
 
-  html += `<div class="subtotal">Subtotal R$ ${order.subtotal.toFixed(2).replace('.', ',')}</div>`;
+  // Totals
+  html += `<div class="total-row"><span>Subtotal:</span><span>R$ ${order.subtotal.toFixed(2).replace('.', ',')}</span></div>`;
   if (order.deliveryFee > 0) {
-    html += `<div class="subtotal">Taxa R$ ${order.deliveryFee.toFixed(2).replace('.', ',')}</div>`;
+    html += `<div class="total-row"><span>Taxa de Entrega:</span><span>R$ ${order.deliveryFee.toFixed(2).replace('.', ',')}</span></div>`;
   }
-  html += `<div class="total">TOTAL R$ ${order.total.toFixed(2).replace('.', ',')}</div>`;
+  html += `<div class="total-row grande"><span>TOTAL:</span><span>R$ ${order.total.toFixed(2).replace('.', ',')}</span></div>`;
 
   // Payment method
-  html += `<div class="linha"></div>`;
+  html += `<div class="linha-tracejada"></div>`;
   if (order.paymentMethod) {
-    const methodLabel = order.paymentMethod === 'dinheiro' ? 'DINHEIRO'
+    const methodLabel = order.paymentMethod === 'dinheiro' ? 'Dinheiro'
       : order.paymentMethod === 'pix' ? 'PIX'
-      : order.paymentMethod === 'cartao' ? 'CARTÃO'
-      : 'OUTROS';
+      : order.paymentMethod === 'cartao' ? 'Cartão'
+      : 'Outros';
 
-    html += `<div class="item">FORMA DE PGTO: ${methodLabel}</div>`;
+    html += `<div class="pgto">PAGAMENTO: ${methodLabel}</div>`;
 
     if (order.paymentMethod === 'dinheiro') {
       if (order.changeFor && order.changeFor > order.total) {
         const troco = order.changeFor - order.total;
-        html += `<div class="item">TROCO PARA: R$ ${order.changeFor.toFixed(2).replace('.', ',')} (TROCO: R$ ${troco.toFixed(2).replace('.', ',')})</div>`;
+        html += `<div class="pgto">TROCO PARA: R$ ${order.changeFor.toFixed(2).replace('.', ',')} (R$ ${troco.toFixed(2).replace('.', ',')})</div>`;
       } else {
-        html += `<div class="item">NÃO PRECISA DE TROCO</div>`;
+        html += `<div class="pgto">NÃO PRECISA DE TROCO</div>`;
       }
     }
 
     if (order.paymentMethod === 'pix') {
-      html += `<div class="item">☐ PAGO</div>`;
+      html += `<div class="pgto">☐ PAGO</div>`;
     }
   }
 
