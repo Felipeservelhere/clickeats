@@ -111,7 +111,7 @@ export function savePrinter(name: string) {
 const RECEIPT_STYLE = `
 <style>
   body {
-    font-family: monospace;
+    font-family: 'Courier New', Courier, monospace;
     width: 320px;
     margin: 0 auto;
     text-align: left;
@@ -119,17 +119,18 @@ const RECEIPT_STYLE = `
     background: #fff;
     padding: 4px;
     -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
-  .tipo { font-size: 28px; font-weight: bold; text-align: center; }
-  .data { font-size: 16px; margin-bottom: 8px; text-align: center; }
-  .info { font-size: 16px; margin-bottom: 8px; text-align: center; }
-  .grupo { background: #000; color: #fff; padding: 6px 8px; margin: 10px 0 6px; font-weight: bold; font-size: 16px; text-align: center; }
-  .item { margin: 4px 0; font-size: 16px; font-weight: bold; padding-left: 4px; }
-  .adicional { font-size: 15px; padding-left: 20px; }
-  .obs { font-size: 15px; font-weight: bold; padding-left: 20px; }
-  .linha { border-top: 2px solid #000; margin: 10px 0; }
-  .total { font-weight: bold; font-size: 22px; text-align: center; margin-top: 4px; }
-  .subtotal { font-size: 16px; text-align: center; }
+  .tipo { font-size: 32px; font-weight: 900; text-align: center; letter-spacing: 1px; }
+  .data { font-size: 18px; font-weight: bold; margin-bottom: 8px; text-align: center; }
+  .info { font-size: 18px; font-weight: bold; margin-bottom: 8px; text-align: center; }
+  .grupo { background: #000; color: #fff; padding: 6px 8px; margin: 10px 0 6px; font-weight: 900; font-size: 18px; text-align: center; }
+  .item { margin: 4px 0; font-size: 18px; font-weight: 900; padding-left: 4px; }
+  .adicional { font-size: 16px; font-weight: bold; padding-left: 20px; }
+  .obs { font-size: 16px; font-weight: 900; padding-left: 20px; }
+  .linha { border-top: 3px solid #000; margin: 10px 0; }
+  .total { font-weight: 900; font-size: 26px; text-align: center; margin-top: 4px; }
+  .subtotal { font-size: 18px; font-weight: bold; text-align: center; }
 </style>
 `;
 
@@ -150,11 +151,11 @@ export function buildKitchenReceipt(order: {
   tableReference?: string;
   items: Array<{
     quantity: number;
-    product: { name: string; categoryId?: string };
+    product: { name: string; categoryId?: string; categoryName?: string };
     selectedAddons: Array<{ name: string }>;
     observation?: string;
   }>;
-}, categories?: Array<{ id: string; name: string }>): string {
+}): string {
   const typeLabel = order.type === 'mesa'
     ? `MESA #${order.tableReference || order.tableNumber}`
     : order.type === 'entrega' ? `ENTREGA #${order.number}` : `RETIRADA #${order.number}`;
@@ -171,7 +172,7 @@ export function buildKitchenReceipt(order: {
   html += `<div class="linha"></div>`;
 
   // Group items by category
-  const grouped = groupItemsByCategory(order.items, categories);
+  const grouped = groupItemsByCategory(order.items);
   for (const group of grouped) {
     html += `<div class="grupo">${group.categoryName}</div>`;
     for (const item of group.items) {
@@ -192,19 +193,21 @@ export function buildKitchenReceipt(order: {
 }
 
 function groupItemsByCategory(
-  items: Array<{ quantity: number; product: { name: string; categoryId?: string; price?: number }; selectedAddons: Array<{ name: string; price?: number }>; observation?: string }>,
-  categories?: Array<{ id: string; name: string }>
+  items: Array<{ quantity: number; product: { name: string; categoryId?: string; categoryName?: string; price?: number }; selectedAddons: Array<{ name: string; price?: number }>; observation?: string }>
 ) {
   const catMap = new Map<string, typeof items>();
+  const catNames = new Map<string, string>();
   for (const item of items) {
     const catId = item.product.categoryId || 'outros';
     if (!catMap.has(catId)) catMap.set(catId, []);
     catMap.get(catId)!.push(item);
+    if (item.product.categoryName && !catNames.has(catId)) {
+      catNames.set(catId, item.product.categoryName.toUpperCase());
+    }
   }
   const groups: Array<{ categoryName: string; items: typeof items }> = [];
   for (const [catId, catItems] of catMap) {
-    const cat = categories?.find(c => c.id === catId);
-    groups.push({ categoryName: cat?.name?.toUpperCase() || 'OUTROS', items: catItems });
+    groups.push({ categoryName: catNames.get(catId) || 'OUTROS', items: catItems });
   }
   return groups;
 }
@@ -227,11 +230,11 @@ export function buildDeliveryReceipt(order: {
   total: number;
   items: Array<{
     quantity: number;
-    product: { name: string; price: number; categoryId?: string };
+    product: { name: string; price: number; categoryId?: string; categoryName?: string };
     selectedAddons: Array<{ name: string; price: number }>;
     observation?: string;
   }>;
-}, categories?: Array<{ id: string; name: string }>): string {
+}): string {
   const typeLabel = order.type === 'mesa'
     ? `MESA #${order.tableReference || order.tableNumber}`
     : order.type === 'entrega' ? `ENTREGA #${order.number}` : `RETIRADA #${order.number}`;
@@ -260,7 +263,7 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="linha"></div>`;
 
   // Group items by category
-  const grouped = groupItemsByCategory(order.items, categories);
+  const grouped = groupItemsByCategory(order.items);
   for (const group of grouped) {
     html += `<div class="grupo">${group.categoryName}</div>`;
     for (const item of group.items) {
