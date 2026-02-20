@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Flame, BookOpen, MapPin, Grid3X3, Printer } from "lucide-react";
+import { Flame, BookOpen, MapPin, Grid3X3, Printer, LogOut } from "lucide-react";
 import logo from "@/assets/logo.svg";
 import { NavLink } from "@/components/NavLink";
 import { PrinterSettings } from "@/components/PrinterSettings";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +24,7 @@ const navItems = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
+  const { user, logout } = useAuth();
   const collapsed = state === "collapsed";
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
 
@@ -60,13 +62,25 @@ export function AppSidebar() {
         </SidebarContent>
 
         {/* Printer config at bottom */}
-        <div className="mt-auto p-2 border-t border-border">
+        <div className="mt-auto p-2 border-t border-border space-y-1">
+          {!collapsed && user && (
+            <div className="px-3 py-1 text-xs text-muted-foreground truncate">
+              {user.display_name}
+            </div>
+          )}
           <button
             onClick={() => setShowPrinterSettings(true)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors w-full"
           >
             <Printer className="h-5 w-5 shrink-0" />
             {!collapsed && <span className="text-sm">Impressora</span>}
+          </button>
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors w-full"
+          >
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!collapsed && <span className="text-sm">Sair</span>}
           </button>
         </div>
       </Sidebar>
