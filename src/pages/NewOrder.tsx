@@ -5,7 +5,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { usePizzaSizes, usePizzaBorders, useProductPizzaPrices, useProductIngredients } from '@/hooks/usePizza';
 import { CartItem, Product, Order, Addon } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
-import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter } from '@/lib/qz-print';
+import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter, isDeliveryDetailsFilled } from '@/lib/qz-print';
 import { AddonsModal } from '@/components/order/AddonsModal';
 import { PizzaBuilderModal } from '@/components/order/PizzaBuilderModal';
 import { CartBar } from '@/components/order/CartBar';
@@ -174,8 +174,8 @@ const NewOrder = () => {
     await autoQZPrint(order);
     setShowCheckout(false);
 
-    // For entrega/retirada, also print delivery receipt silently
-    if (order.type !== 'mesa') {
+    // For entrega/retirada, also print delivery receipt only if all details filled
+    if (order.type !== 'mesa' && isDeliveryDetailsFilled(order)) {
       const hasPrinter = !!getSavedPrinter();
       if (hasPrinter) {
         try {

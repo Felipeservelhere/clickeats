@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Order } from '@/types/order';
 import { Printer, Check, Loader2 } from 'lucide-react';
-import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter } from '@/lib/qz-print';
+import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter, isDeliveryDetailsFilled } from '@/lib/qz-print';
 import { toast } from 'sonner';
 
 interface PrintModalProps {
