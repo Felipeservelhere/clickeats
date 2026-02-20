@@ -65,9 +65,10 @@ const CardapioPage = () => {
 
   // Pizza size form
   const [sizeModal, setSizeModal] = useState(false);
-  const [editSize, setEditSize] = useState<{ id: string; name: string; max_flavors: number } | null>(null);
+  const [editSize, setEditSize] = useState<{ id: string; name: string; max_flavors: number; default_price: number } | null>(null);
   const [sizeName, setSizeName] = useState('');
   const [sizeMaxFlavors, setSizeMaxFlavors] = useState('1');
+  const [sizeDefaultPrice, setSizeDefaultPrice] = useState('');
 
   // Pizza border form
   const [borderModal, setBorderModal] = useState(false);
@@ -131,16 +132,17 @@ const CardapioPage = () => {
   };
 
   // Pizza size handlers
-  const openNewSize = () => { setEditSize(null); setSizeName(''); setSizeMaxFlavors('1'); setSizeModal(true); };
-  const openEditSize = (s: typeof pizzaSizes[0]) => { setEditSize({ id: s.id, name: s.name, max_flavors: s.max_flavors }); setSizeName(s.name); setSizeMaxFlavors(String(s.max_flavors)); setSizeModal(true); };
+  const openNewSize = () => { setEditSize(null); setSizeName(''); setSizeMaxFlavors('1'); setSizeDefaultPrice(''); setSizeModal(true); };
+  const openEditSize = (s: typeof pizzaSizes[0]) => { setEditSize({ id: s.id, name: s.name, max_flavors: s.max_flavors, default_price: s.default_price }); setSizeName(s.name); setSizeMaxFlavors(String(s.max_flavors)); setSizeDefaultPrice(String(s.default_price || '')); setSizeModal(true); };
   const saveSize = async () => {
     if (!sizeName.trim()) return;
     try {
+      const payload = { name: sizeName.trim(), max_flavors: parseInt(sizeMaxFlavors) || 1, default_price: parseFloat(sizeDefaultPrice) || 0 };
       if (editSize) {
-        await updatePizzaSize.mutateAsync({ id: editSize.id, name: sizeName.trim(), max_flavors: parseInt(sizeMaxFlavors) || 1 });
+        await updatePizzaSize.mutateAsync({ id: editSize.id, ...payload });
         toast.success('Tamanho atualizado');
       } else {
-        await createPizzaSize.mutateAsync({ name: sizeName.trim(), max_flavors: parseInt(sizeMaxFlavors) || 1, sort_order: pizzaSizes.length });
+        await createPizzaSize.mutateAsync({ ...payload, sort_order: pizzaSizes.length });
         toast.success('Tamanho criado');
       }
       setSizeModal(false);
@@ -295,7 +297,10 @@ const CardapioPage = () => {
                     <div key={size.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-xl">
                       <div>
                         <h3 className="font-semibold">{size.name}</h3>
-                        <p className="text-xs text-muted-foreground">Até {size.max_flavors} sabor{size.max_flavors > 1 ? 'es' : ''}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Até {size.max_flavors} sabor{size.max_flavors > 1 ? 'es' : ''}
+                          {Number(size.default_price) > 0 && ` • R$ ${Number(size.default_price).toFixed(2)}`}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditSize(size)}>
@@ -455,6 +460,11 @@ const CardapioPage = () => {
             <div className="space-y-1">
               <label className="text-sm font-semibold text-muted-foreground">Máx. sabores</label>
               <Input type="number" min="1" value={sizeMaxFlavors} onChange={e => setSizeMaxFlavors(e.target.value)} className="bg-secondary/50" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-muted-foreground">Preço padrão (R$)</label>
+              <Input type="number" step="0.01" placeholder="0.00" value={sizeDefaultPrice} onChange={e => setSizeDefaultPrice(e.target.value)} className="bg-secondary/50" />
+              <p className="text-xs text-muted-foreground">Usado quando o sabor não tem preço específico</p>
             </div>
             <Button onClick={saveSize} className="w-full" disabled={createPizzaSize.isPending || updatePizzaSize.isPending}>
               {editSize ? 'Salvar' : 'Criar'}

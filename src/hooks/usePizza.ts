@@ -7,6 +7,7 @@ export interface DbPizzaSize {
   name: string;
   max_flavors: number;
   sort_order: number;
+  default_price: number;
 }
 
 export function usePizzaSizes() {
@@ -26,7 +27,7 @@ export function usePizzaSizes() {
 export function useCreatePizzaSize() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (s: { name: string; max_flavors: number; sort_order?: number }) => {
+    mutationFn: async (s: { name: string; max_flavors: number; sort_order?: number; default_price?: number }) => {
       const { data, error } = await supabase.from('pizza_sizes').insert(s).select().single();
       if (error) throw error;
       return data;
@@ -38,7 +39,7 @@ export function useCreatePizzaSize() {
 export function useUpdatePizzaSize() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; max_flavors?: number; sort_order?: number }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; max_flavors?: number; sort_order?: number; default_price?: number }) => {
       const { error } = await supabase.from('pizza_sizes').update(updates).eq('id', id);
       if (error) throw error;
     },

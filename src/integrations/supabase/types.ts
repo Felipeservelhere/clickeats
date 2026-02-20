@@ -196,6 +196,7 @@ export type Database = {
       pizza_sizes: {
         Row: {
           created_at: string
+          default_price: number
           id: string
           max_flavors: number
           name: string
@@ -203,6 +204,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_price?: number
           id?: string
           max_flavors?: number
           name: string
@@ -210,6 +212,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_price?: number
           id?: string
           max_flavors?: number
           name?: string
