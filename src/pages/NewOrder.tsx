@@ -4,11 +4,11 @@ import { useCategories } from '@/hooks/useCategories';
 import { useProducts } from '@/hooks/useProducts';
 import { CartItem, Product, Order, Addon } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
-import { printRaw, buildKitchenReceipt, getSavedPrinter } from '@/lib/qz-print';
+import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter } from '@/lib/qz-print';
 import { AddonsModal } from '@/components/order/AddonsModal';
 import { CartBar } from '@/components/order/CartBar';
 import { CheckoutSheet } from '@/components/order/CheckoutSheet';
-import { PrintModal } from '@/components/order/PrintModal';
+
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { FoodIcon } from '@/components/FoodIcon';
@@ -36,9 +36,6 @@ const NewOrder = () => {
   const [addonsProduct, setAddonsProduct] = useState<Product | null>(null);
   const [editingItem, setEditingItem] = useState<CartItem | undefined>();
   const [showCheckout, setShowCheckout] = useState(false);
-  const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
-  const [showKitchenPrint, setShowKitchenPrint] = useState(false);
-  const [showDeliveryPrint, setShowDeliveryPrint] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
 
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -118,7 +115,6 @@ const NewOrder = () => {
     if (order.type === 'mesa' && order.tableReference) {
       const existing = getActiveTableOrder(order.tableReference);
       if (existing) {
-        // Accumulate items to existing order, print only new items
         const updated = addItemsToTableOrder(order.tableReference, order.items, order.subtotal);
         if (updated) {
           await autoQZPrint(updated, order.items);
@@ -130,24 +126,22 @@ const NewOrder = () => {
       }
     }
     addOrder(order);
-    // Auto-print kitchen for all orders
     await autoQZPrint(order);
-    setCreatedOrder(order);
     setShowCheckout(false);
-    // For mesa, go straight to dashboard (no delivery print needed)
-    if (order.type === 'mesa') {
-      navigate('/');
-      return;
-    }
-    setShowKitchenPrint(true);
-  };
-  const handleKitchenPrintClose = () => {
-    setShowKitchenPrint(false);
-    if (createdOrder && (createdOrder.type === 'entrega' || createdOrder.type === 'retirada')) setShowDeliveryPrint(true);
-    else navigate('/');
-  };
-  const handleDeliveryPrintClose = () => { setShowDeliveryPrint(false); navigate('/'); };
 
+    // For entrega/retirada, also print delivery receipt silently
+    if (order.type !== 'mesa') {
+      const hasPrinter = !!getSavedPrinter();
+      if (hasPrinter) {
+        try {
+          const data = buildDeliveryReceipt(order);
+          await printRaw(data);
+        } catch {}
+      }
+    }
+    setCart([]);
+    navigate('/');
+  };
   return (
     <div className="h-[calc(100vh-3rem)] flex flex-col bg-background">
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border">
@@ -210,8 +204,6 @@ const NewOrder = () => {
       <AddonsModal product={addonsProduct} existingItem={editingItem} open={!!addonsProduct} onClose={() => { setAddonsProduct(null); setEditingItem(undefined); }} onConfirm={handleAddToCart} />
       <CartBar items={cart} onEditItem={handleEditItem} onRemoveItem={handleRemoveItem} onCheckout={() => setShowCheckout(true)} />
       <CheckoutSheet open={showCheckout} onClose={() => setShowCheckout(false)} items={cart} onFinalize={handleFinalize} />
-      <PrintModal order={createdOrder} type="kitchen" open={showKitchenPrint} onClose={handleKitchenPrintClose} />
-      <PrintModal order={createdOrder} type="delivery" open={showDeliveryPrint} onClose={handleDeliveryPrintClose} />
     </div>
   );
 };
