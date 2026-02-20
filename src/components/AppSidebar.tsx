@@ -1,5 +1,7 @@
-import { Flame, BookOpen, MapPin, Grid3X3 } from "lucide-react";
+import { useState } from "react";
+import { Flame, BookOpen, MapPin, Grid3X3, Printer } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { PrinterSettings } from "@/components/PrinterSettings";
 import {
   Sidebar,
   SidebarContent,
@@ -21,36 +23,52 @@ const navItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const [showPrinterSettings, setShowPrinterSettings] = useState(false);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border bg-card">
-      <div className="p-3 flex items-center gap-2 border-b border-border">
-        <Flame className="h-6 w-6 text-primary shrink-0" />
-        {!collapsed && <span className="font-heading font-bold text-lg">PedidoFácil</span>}
-      </div>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors"
-                      activeClassName="bg-primary/10 text-primary font-semibold"
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+    <>
+      <Sidebar collapsible="icon" className="border-r border-border bg-card">
+        <div className="p-3 flex items-center gap-2 border-b border-border">
+          <Flame className="h-6 w-6 text-primary shrink-0" />
+          {!collapsed && <span className="font-heading font-bold text-lg">PedidoFácil</span>}
+        </div>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors"
+                        activeClassName="bg-primary/10 text-primary font-semibold"
+                      >
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        {/* Printer config at bottom */}
+        <div className="mt-auto p-2 border-t border-border">
+          <button
+            onClick={() => setShowPrinterSettings(true)}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors w-full"
+          >
+            <Printer className="h-5 w-5 shrink-0" />
+            {!collapsed && <span className="text-sm">Impressora</span>}
+          </button>
+        </div>
+      </Sidebar>
+
+      <PrinterSettings open={showPrinterSettings} onClose={() => setShowPrinterSettings(false)} />
+    </>
   );
 }

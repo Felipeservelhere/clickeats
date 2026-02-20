@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Order } from '@/types/order';
-import { Printer } from 'lucide-react';
+import { Printer, Check, Loader2 } from 'lucide-react';
+import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter } from '@/lib/qz-print';
+import { toast } from 'sonner';
 
 interface PrintModalProps {
   order: Order | null;
@@ -18,9 +21,44 @@ function formatDate(iso: string) {
 }
 
 export function PrintModal({ order, type, open, onClose }: PrintModalProps) {
+  const [printing, setPrinting] = useState(false);
+  const [printed, setPrinted] = useState(false);
+  const autoPrint = localStorage.getItem('qz-auto-print') === 'true';
+  const hasPrinter = !!getSavedPrinter();
+
+  // Auto-print when modal opens
+  useEffect(() => {
+    if (open && order && autoPrint && hasPrinter && !printed) {
+      handleQZPrint();
+    }
+    if (!open) setPrinted(false);
+  }, [open, order]);
+
   if (!order) return null;
 
-  const handlePrint = () => {
+  const handleQZPrint = async () => {
+    setPrinting(true);
+    try {
+      const data = type === 'kitchen'
+        ? buildKitchenReceipt(order)
+        : buildDeliveryReceipt(order);
+      const ok = await printRaw(data);
+      if (ok) {
+        setPrinted(true);
+        toast.success('Impresso com sucesso!');
+        if (autoPrint) {
+          setTimeout(onClose, 800);
+        }
+      } else {
+        toast.error('Falha ao imprimir. Verifique o QZ Tray.');
+      }
+    } catch {
+      toast.error('Erro na impressão');
+    }
+    setPrinting(false);
+  };
+
+  const handleBrowserPrint = () => {
     window.print();
   };
 
@@ -43,8 +81,8 @@ export function PrintModal({ order, type, open, onClose }: PrintModalProps) {
             {order.customerName && (
               <p className="font-semibold mt-1">{order.customerName}</p>
             )}
-            {order.type === 'mesa' && order.tableNumber && (
-              <p className="text-sm text-muted-foreground">Mesa {order.tableNumber}</p>
+            {order.type === 'mesa' && order.tableReference && (
+              <p className="text-sm text-muted-foreground">Mesa: {order.tableReference}</p>
             )}
           </div>
 
@@ -131,10 +169,19 @@ export function PrintModal({ order, type, open, onClose }: PrintModalProps) {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose} className="flex-1">Fechar</Button>
-          <Button onClick={handlePrint} className="flex-1 gap-2">
-            <Printer className="h-4 w-4" /> Imprimir
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            {printed ? 'Fechar' : 'Pular'}
           </Button>
+          {hasPrinter ? (
+            <Button onClick={handleQZPrint} className="flex-1 gap-2" disabled={printing}>
+              {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : printed ? <Check className="h-4 w-4" /> : <Printer className="h-4 w-4" />}
+              {printing ? 'Imprimindo...' : printed ? 'Impresso!' : 'Imprimir'}
+            </Button>
+          ) : (
+            <Button onClick={handleBrowserPrint} className="flex-1 gap-2">
+              <Printer className="h-4 w-4" /> Imprimir
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
