@@ -88,7 +88,15 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   // When customer is selected and has addresses, show address selector
   useEffect(() => {
     if (selectedCustomer && customerAddresses.length > 0 && orderType === 'entrega') {
-      setShowAddressSelector(true);
+      // Auto-fill with default address (or first one)
+      const defaultAddr = customerAddresses.find(a => a.is_default) || customerAddresses[0];
+      if (defaultAddr) {
+        handleSelectAddress(defaultAddr);
+      }
+      // If multiple addresses, also show selector
+      if (customerAddresses.length > 1) {
+        setShowAddressSelector(true);
+      }
     }
   }, [selectedCustomer, customerAddresses, orderType]);
 
