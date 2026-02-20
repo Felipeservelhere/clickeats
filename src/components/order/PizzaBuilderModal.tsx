@@ -140,9 +140,13 @@ export function PizzaBuilderModal({
     setInitialized(false);
   };
 
-  // Initialize with the clicked product
+  // Initialize with the clicked product + auto-select size if only one
   if (open && initialProduct && !initialized) {
     setFlavors([{ product: initialProduct, removedIngredients: [], observation: '' }]);
+    if (pizzaSizes.length === 1) {
+      setSelectedSize(pizzaSizes[0]);
+      setNumFlavors(1);
+    }
     setInitialized(true);
   }
 
