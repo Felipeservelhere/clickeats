@@ -121,6 +121,8 @@ const RECEIPT_STYLE = `
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  .logo { text-align: center; margin-bottom: 8px; }
+  .logo img { max-width: 200px; margin: 0 auto; }
   .tipo { font-size: 32px; font-weight: 900; text-align: center; letter-spacing: 1px; }
   .data { font-size: 18px; font-weight: bold; margin-bottom: 8px; text-align: center; }
   .info { font-size: 18px; font-weight: bold; margin-bottom: 8px; text-align: center; }
@@ -212,6 +214,7 @@ export function buildKitchenReceipt(order: {
   const { date, time } = formatDateTime(order.createdAt);
 
   let html = `<html><head>${RECEIPT_STYLE}</head><body><div class="ticket">`;
+  html += `<div class="logo"><img src="${window.location.origin}/logo.svg" /></div>`;
   html += `<div class="tipo">${typeLabel}</div>`;
   html += `<div class="data">${date} ${time}</div>`;
 
@@ -290,6 +293,7 @@ export function buildDeliveryReceipt(order: {
   const { date, time } = formatDateTime(order.createdAt);
 
   let html = `<html><head>${RECEIPT_STYLE}</head><body><div class="ticket">`;
+  html += `<div class="logo"><img src="${window.location.origin}/logo.svg" /></div>`;
   html += `<div class="tipo">${typeLabel}</div>`;
   html += `<div class="data">${date} ${time}</div>`;
 
