@@ -96,15 +96,18 @@ const Index = () => {
   // Mobile: Table cards view
   if (isMobile) {
     const tableOrders = orders.filter(o => o.type === 'mesa' && o.status !== 'completed');
-    const occupiedTables = new Set(tableOrders.map(o => o.tableNumber));
+
+    const getOrderForTable = (num: number) => {
+      return tableOrders.find(o => o.tableNumber === num || o.tableReference === String(num));
+    };
 
     return (
       <div className="bg-background p-4">
         <h1 className="font-heading font-bold text-xl mb-4">Mesas</h1>
         <div className="grid grid-cols-4 gap-3">
           {activeTables.map(num => {
-            const occupied = occupiedTables.has(num);
-            const order = tableOrders.find(o => o.tableNumber === num);
+            const order = getOrderForTable(num);
+            const occupied = !!order;
             return (
               <button
                 key={num}
