@@ -1,4 +1,5 @@
 import qz from 'qz-tray';
+import { KJUR } from 'jsrsasign';
 
 let connected = false;
 
@@ -10,6 +11,10 @@ export function setCertificate(cert: string) {
   });
 }
 
+export function setPrivateKey(key: string) {
+  localStorage.setItem('qz-private-key', key);
+}
+
 function loadCertificate() {
   const cert = localStorage.getItem('qz-certificate');
   if (cert) {
@@ -17,13 +22,32 @@ function loadCertificate() {
       resolve(cert);
     });
   }
-  // Skip signature validation (no private key needed for trusted certs)
+
   qz.security.setSignatureAlgorithm('SHA512');
-  qz.security.setSignaturePromise(() => {
-    return (resolve: any) => {
-      resolve();
-    };
-  });
+
+  const privateKey = localStorage.getItem('qz-private-key');
+  if (privateKey) {
+    (qz.security as any).setSignaturePromise((toSign: string) => {
+      return (resolve: any, reject: any) => {
+        try {
+          const sig = new KJUR.crypto.Signature({ alg: 'SHA512withRSA' });
+          sig.init(privateKey);
+          sig.updateString(toSign);
+          const hex = sig.sign();
+          resolve(KJUR.hextob64(hex));
+        } catch (err) {
+          console.error('Signing failed:', err);
+          reject(err);
+        }
+      };
+    });
+  } else {
+    qz.security.setSignaturePromise(() => {
+      return (resolve: any) => {
+        resolve();
+      };
+    });
+  }
 }
 
 export async function connectQZ(): Promise<boolean> {
