@@ -178,6 +178,57 @@ export type Database = {
         }
         Relationships: []
       }
+      fila_impressao: {
+        Row: {
+          criado_por: string | null
+          criado_por_nome: string | null
+          dados_impressao: string
+          data_criacao: string
+          data_impressao: string | null
+          id: string
+          order_id: string | null
+          status: string
+          tipo: string
+        }
+        Insert: {
+          criado_por?: string | null
+          criado_por_nome?: string | null
+          dados_impressao: string
+          data_criacao?: string
+          data_impressao?: string | null
+          id?: string
+          order_id?: string | null
+          status?: string
+          tipo?: string
+        }
+        Update: {
+          criado_por?: string | null
+          criado_por_nome?: string | null
+          dados_impressao?: string
+          data_criacao?: string
+          data_impressao?: string | null
+          id?: string
+          order_id?: string | null
+          status?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fila_impressao_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fila_impressao_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       neighborhoods: {
         Row: {
           created_at: string

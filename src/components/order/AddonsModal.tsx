@@ -51,7 +51,7 @@ export function AddonsModal({ product, existingItem, open, onClose, onConfirm }:
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && resetAndClose()}>
-      <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">{product.name}</DialogTitle>
           <p className="text-primary font-semibold text-lg">

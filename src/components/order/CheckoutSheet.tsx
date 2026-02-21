@@ -259,7 +259,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   return (
     <>
       <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-        <SheetContent side="bottom" className="bg-card border-border max-h-[90vh] overflow-y-auto rounded-t-2xl">
+        <SheetContent side="bottom" className="bg-card border-border max-h-[90vh] overflow-y-auto rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
           <SheetHeader>
             <SheetTitle className="font-heading text-xl">
               {isMesaMode ? `Mesa ${forcedTableNumber}` : 'Finalizar Pedido'}

@@ -2,9 +2,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Order, CartItem } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Plus, ChefHat, Check, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter } from '@/lib/qz-print';
+import { buildKitchenReceipt, buildDeliveryReceipt } from '@/lib/qz-print';
+import { enqueuePrint } from '@/hooks/usePrintQueue';
 import { toast } from 'sonner';
 
 interface TableDetailSheetProps {
@@ -16,6 +18,7 @@ interface TableDetailSheetProps {
 export function TableDetailSheet({ order, open, onClose }: TableDetailSheetProps) {
   const navigate = useNavigate();
   const { updateOrder, addItemsToTableOrder } = useOrders();
+  const { user } = useAuth();
 
   if (!order) return null;
 
@@ -34,32 +37,22 @@ export function TableDetailSheet({ order, open, onClose }: TableDetailSheetProps
     };
     const updated = await addItemsToTableOrder(order.tableReference, [newItem], item.product.price + item.selectedAddons.reduce((a, ad) => a + ad.price, 0));
     if (updated) {
-      // Auto-print just this new item
-      const hasPrinter = !!getSavedPrinter();
-      if (hasPrinter) {
-        try {
-          const data = buildKitchenReceipt({ ...updated, items: [newItem] });
-          const ok = await printRaw(data);
-          if (ok) toast.success('Item adicionado e impresso!');
-          else toast.error('Falha na impressão');
-        } catch {
-          toast.error('Erro na impressão');
-        }
-      } else {
+      try {
+        const data = buildKitchenReceipt({ ...updated, items: [newItem] });
+        await enqueuePrint(data, 'kitchen', updated.id, user?.id, user?.display_name);
+        toast.success('Item adicionado!');
+      } catch {
         toast.success('Item adicionado!');
       }
     }
   };
 
   const handlePrintAll = async () => {
-    const hasPrinter = !!getSavedPrinter();
-    if (!hasPrinter) { toast.error('Configure uma impressora primeiro'); return; }
     try {
       const data = buildDeliveryReceipt(order);
-      const ok = await printRaw(data);
-      if (ok) toast.success('Resumo impresso!');
-      else toast.error('Falha na impressão');
-    } catch { toast.error('Erro na impressão'); }
+      await enqueuePrint(data, 'delivery', order.id, user?.id, user?.display_name);
+      toast.success('Impressão enviada!');
+    } catch { toast.error('Erro ao enviar impressão'); }
   };
 
   const handleCloseTable = () => {
