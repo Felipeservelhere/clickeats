@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, BookOpen, MapPin, Grid3X3, Printer, LogOut } from "lucide-react";
+import { Flame, BookOpen, MapPin, Grid3X3, Printer, LogOut, Smartphone } from "lucide-react";
 import logo from "@/assets/logo.svg";
 import { NavLink } from "@/components/NavLink";
 import { PrinterSettings } from "@/components/PrinterSettings";
@@ -20,6 +20,7 @@ const navItems = [
   { title: "Cardápio", url: "/cardapio", icon: BookOpen },
   { title: "Taxa de Entrega", url: "/taxas", icon: MapPin },
   { title: "Mesas", url: "/mesas", icon: Grid3X3 },
+  { title: "App", url: "/app", icon: Smartphone },
 ];
 
 export function AppSidebar() {
