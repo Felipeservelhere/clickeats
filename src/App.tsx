@@ -12,6 +12,7 @@ import NewOrder from "./pages/NewOrder";
 import Cardapio from "./pages/Cardapio";
 import Taxas from "./pages/Taxas";
 import Mesas from "./pages/Mesas";
+import AppInstall from "./pages/AppInstall";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ function AuthGate() {
             <Route path="/cardapio" element={<Cardapio />} />
             <Route path="/taxas" element={<Taxas />} />
             <Route path="/mesas" element={<Mesas />} />
+            <Route path="/app" element={<AppInstall />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

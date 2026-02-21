@@ -3,6 +3,34 @@ import { KJUR, hextob64 } from 'jsrsasign';
 
 let connected = false;
 
+// ─── Paper width config ───
+export type PaperWidth = '58mm' | '80mm';
+export type PrintMode = 'escpos' | 'browser';
+
+export function getSavedPaperWidth(): PaperWidth {
+  return (localStorage.getItem('qz-paper-width') as PaperWidth) || '80mm';
+}
+
+export function savePaperWidth(width: PaperWidth) {
+  localStorage.setItem('qz-paper-width', width);
+}
+
+export function getSavedPrintMode(): PrintMode {
+  return (localStorage.getItem('qz-print-mode') as PrintMode) || 'escpos';
+}
+
+export function savePrintMode(mode: PrintMode) {
+  localStorage.setItem('qz-print-mode', mode);
+}
+
+function getPaperPixelWidth(): number {
+  return getSavedPaperWidth() === '58mm' ? 210 : 320;
+}
+
+function getPaperMmWidth(): number {
+  return getSavedPaperWidth() === '58mm' ? 48 : 72;
+}
+
 // Certificate will be loaded from localStorage or set via settings
 export function setCertificate(cert: string) {
   localStorage.setItem('qz-certificate', cert);
@@ -111,40 +139,52 @@ export function savePrinter(name: string) {
 
 // ─── HTML Receipt Builders ───
 
-const RECEIPT_STYLE = `
+function getReceiptStyle(): string {
+  const width = getPaperPixelWidth();
+  return `
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Courier New', Courier, monospace;
-    width: 320px;
-    margin: 0 auto;
+    width: ${width}px;
+    max-width: ${width}px;
+    margin: 0;
     text-align: left;
     color: #000;
     background: #fff;
-    padding: 4px;
+    padding: 2px;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
   }
   .logo { text-align: center; margin-bottom: 4px; }
-  .logo img { max-width: 180px; margin: 0 auto; filter: invert(1); }
-  .tipo { font-size: 20px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
-  .data { font-size: 14px; font-weight: bold; margin-bottom: 2px; text-align: center; }
-  .info { font-size: 16px; font-weight: bold; margin-bottom: 2px; text-align: left; }
-  .info-label { font-size: 16px; font-weight: 900; margin-bottom: 2px; text-align: left; }
-  .grupo { background: #000; color: #fff; padding: 4px 8px; margin: 6px 0 4px; font-weight: 900; font-size: 16px; text-align: center; }
-  .item { margin: 3px 0; font-size: 16px; font-weight: 900; padding-left: 4px; word-wrap: break-word; overflow-wrap: break-word; }
-  .adicional { font-size: 14px; font-weight: bold; padding-left: 20px; word-wrap: break-word; }
-  .obs { font-size: 14px; font-weight: 900; padding-left: 20px; word-wrap: break-word; }
-  .sabor { font-size: 14px; font-weight: bold; padding-left: 16px; margin: 2px 0; }
-  .sem { font-size: 14px; font-weight: 900; padding-left: 28px; color: #000; }
-  .linha { border-top: 2px solid #000; margin: 6px 0; }
-  .linha-tracejada { border-top: 2px dashed #000; margin: 6px 0; }
-  .total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; margin: 2px 0; padding: 0 4px; }
-  .total-row.grande { font-size: 22px; }
-  .total { font-weight: 900; font-size: 22px; text-align: center; margin-top: 4px; }
-  .subtotal { font-size: 16px; font-weight: bold; text-align: center; }
-  .pgto { font-size: 14px; font-weight: 900; padding-left: 4px; margin: 2px 0; }
+  .logo img { max-width: ${Math.min(width - 20, 180)}px; margin: 0 auto; filter: invert(1); }
+  .tipo { font-size: ${width < 250 ? '16px' : '20px'}; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
+  .data { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: bold; margin-bottom: 2px; text-align: center; }
+  .info { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; margin-bottom: 2px; text-align: left; overflow-wrap: break-word; }
+  .info-label { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin-bottom: 2px; text-align: left; }
+  .grupo { background: #000; color: #fff; padding: 3px 6px; margin: 4px 0 3px; font-weight: 900; font-size: ${width < 250 ? '13px' : '16px'}; text-align: center; }
+  .item { margin: 2px 0; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; padding-left: 2px; overflow-wrap: break-word; word-break: break-word; }
+  .adicional { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: bold; padding-left: ${width < 250 ? '12px' : '20px'}; overflow-wrap: break-word; }
+  .obs { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${width < 250 ? '12px' : '20px'}; overflow-wrap: break-word; }
+  .sabor { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: bold; padding-left: ${width < 250 ? '10px' : '16px'}; margin: 2px 0; }
+  .sem { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${width < 250 ? '18px' : '28px'}; color: #000; }
+  .linha { border-top: 2px solid #000; margin: 4px 0; }
+  .linha-tracejada { border-top: 2px dashed #000; margin: 4px 0; }
+  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin: 2px 0; padding: 0 2px; }
+  .total-row.grande { font-size: ${width < 250 ? '18px' : '22px'}; }
+  .total { font-weight: 900; font-size: ${width < 250 ? '18px' : '22px'}; text-align: center; margin-top: 4px; }
+  .subtotal { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; text-align: center; }
+  .pgto { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: 2px; margin: 2px 0; overflow-wrap: break-word; }
+  @media print {
+    @page { margin: 0; size: ${getSavedPaperWidth() === '58mm' ? '58mm' : '80mm'} auto; }
+    body { width: 100%; max-width: 100%; }
+  }
 </style>
 `;
+}
 
 function formatDateTime(iso: string) {
   const d = new Date(iso);
@@ -182,7 +222,6 @@ function renderPizzaItemKitchen(item: ReceiptItem): string {
   if (pd.borderName) {
     html += `<div class="adicional">BORDA: ${pd.borderName.toUpperCase()}</div>`;
   }
-  // Non-pizza observation (general)
   if (item.observation && !item.pizzaDetail) {
     html += `<div class="obs">OBS: ${item.observation}</div>`;
   }
@@ -218,6 +257,7 @@ export function buildKitchenReceipt(order: {
   tableReference?: string;
   items: ReceiptItem[];
 }): string {
+  const RECEIPT_STYLE = getReceiptStyle();
   const typeLabel = order.type === 'mesa'
     ? `MESA #${order.tableReference || order.tableNumber}`
     : order.type === 'entrega' ? `ENTREGA #${order.number}` : `RETIRADA #${order.number}`;
@@ -234,7 +274,6 @@ export function buildKitchenReceipt(order: {
 
   html += `<div class="linha"></div>`;
 
-  // Group items by category
   const grouped = groupItemsByCategory(order.items);
   for (const group of grouped) {
     html += `<div class="grupo">${group.categoryName}</div>`;
@@ -297,6 +336,7 @@ export function buildDeliveryReceipt(order: {
   changeFor?: number;
   items: ReceiptItem[];
 }): string {
+  const RECEIPT_STYLE = getReceiptStyle();
   const typeLabel = order.type === 'mesa'
     ? `MESA #${order.tableReference || order.tableNumber}`
     : order.type === 'entrega' ? `ENTREGA #${order.number}` : `RETIRADA #${order.number}`;
@@ -307,7 +347,6 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="tipo">${typeLabel}</div>`;
   html += `<div class="data">${date} ${time}</div>`;
 
-  // Cliente section
   html += `<div class="linha-tracejada"></div>`;
   if (order.customerName) {
     html += `<div class="info-label">CLIENTE:</div>`;
@@ -327,7 +366,6 @@ export function buildDeliveryReceipt(order: {
   }
   html += `<div class="linha-tracejada"></div>`;
 
-  // Items by category
   const grouped = groupItemsByCategory(order.items);
   for (const group of grouped) {
     html += `<div class="grupo">${group.categoryName}</div>`;
@@ -335,12 +373,7 @@ export function buildDeliveryReceipt(order: {
       if (item.pizzaDetail) {
         html += renderPizzaItemDelivery(item);
       } else {
-        const itemTotal = ((item.product as any).price + item.selectedAddons.reduce((a: number, ad: any) => a + (ad.price || 0), 0)) * item.quantity;
-        if (order.type === 'mesa') {
-          html += `<div class="item">${item.quantity}x  ${item.product.name.toUpperCase()}</div>`;
-        } else {
-          html += `<div class="item">${item.quantity}x  ${item.product.name.toUpperCase()}</div>`;
-        }
+        html += `<div class="item">${item.quantity}x  ${item.product.name.toUpperCase()}</div>`;
         if (item.selectedAddons.length > 0) {
           for (const addon of item.selectedAddons) {
             html += `<div class="adicional">+ ${addon.name}</div>`;
@@ -360,14 +393,12 @@ export function buildDeliveryReceipt(order: {
     html += `<div class="linha-tracejada"></div>`;
   }
 
-  // Totals
   html += `<div class="total-row"><span>Subtotal:</span><span>R$ ${order.subtotal.toFixed(2).replace('.', ',')}</span></div>`;
   if (order.deliveryFee > 0) {
     html += `<div class="total-row"><span>Taxa de Entrega:</span><span>R$ ${order.deliveryFee.toFixed(2).replace('.', ',')}</span></div>`;
   }
   html += `<div class="total-row grande"><span>TOTAL:</span><span>R$ ${order.total.toFixed(2).replace('.', ',')}</span></div>`;
 
-  // Payment method
   html += `<div class="linha-tracejada"></div>`;
   if (order.paymentMethod) {
     const methodLabel = order.paymentMethod === 'dinheiro' ? 'Dinheiro'
@@ -413,7 +444,27 @@ export function isDeliveryDetailsFilled(order: {
   return false;
 }
 
+/** Print via browser window.print() */
+export function printViaBrowser(htmlData: string) {
+  const printWindow = window.open('', '_blank', 'width=400,height=600');
+  if (!printWindow) return;
+  printWindow.document.write(htmlData);
+  printWindow.document.close();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+    printWindow.onafterprint = () => printWindow.close();
+  };
+}
+
 export async function printRaw(data: string, printerName?: string): Promise<boolean> {
+  const printMode = getSavedPrintMode();
+
+  if (printMode === 'browser') {
+    printViaBrowser(data);
+    return true;
+  }
+
   const ok = await connectQZ();
   if (!ok) {
     console.error('QZ Tray not connected');
@@ -427,10 +478,11 @@ export async function printRaw(data: string, printerName?: string): Promise<bool
   }
 
   try {
+    const paperMm = getPaperMmWidth();
     const config = qz.configs.create(printer, {
       margins: { top: 0, right: 0, bottom: 0, left: 0 },
       units: 'mm',
-      size: { width: 80 },
+      size: { width: paperMm },
       colorType: 'grayscale',
       scaleContent: true,
       rasterize: true,
