@@ -5,7 +5,9 @@ import { useProducts } from '@/hooks/useProducts';
 import { usePizzaSizes, usePizzaBorders, useProductPizzaPrices, useProductIngredients } from '@/hooks/usePizza';
 import { CartItem, Product, Order, Addon } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
-import { printRaw, buildKitchenReceipt, buildDeliveryReceipt, getSavedPrinter, isDeliveryDetailsFilled } from '@/lib/qz-print';
+import { useAuth } from '@/contexts/AuthContext';
+import { buildKitchenReceipt, buildDeliveryReceipt, isDeliveryDetailsFilled } from '@/lib/qz-print';
+import { enqueuePrint } from '@/hooks/usePrintQueue';
 import { AddonsModal } from '@/components/order/AddonsModal';
 import { PizzaBuilderModal } from '@/components/order/PizzaBuilderModal';
 import { CartBar } from '@/components/order/CartBar';
@@ -122,17 +124,15 @@ const NewOrder = () => {
   const handleEditItem = (item: CartItem) => { setEditingItem(item); setAddonsProduct(item.product); };
   const handleRemoveItem = (cartId: string) => setCart(prev => prev.filter(i => i.cartId !== cartId));
 
-  const autoQZPrint = async (order: Order, items?: CartItem[]) => {
-    const hasPrinter = !!getSavedPrinter();
-    if (!hasPrinter) return;
+  const { user } = useAuth();
+
+  const enqueueKitchenPrint = async (order: Order, items?: CartItem[]) => {
     try {
       const receiptOrder = items ? { ...order, items } : order;
       const data = buildKitchenReceipt(receiptOrder);
-      const ok = await printRaw(data);
-      if (ok) toast.success('Impresso automaticamente!');
-      else toast.error('Falha na impressão automática');
+      await enqueuePrint(data, 'kitchen', order.id, user?.id, user?.display_name);
     } catch {
-      toast.error('Erro na impressão automática');
+      console.error('Erro ao enfileirar impressão');
     }
   };
 
@@ -148,7 +148,7 @@ const NewOrder = () => {
         const updatedSubtotal = existing.subtotal + order.subtotal;
         const updatedTotal = updatedSubtotal + existing.deliveryFee;
         await updateOrder(addToOrderId, { items: updatedItems, subtotal: updatedSubtotal, total: updatedTotal });
-        await autoQZPrint({ ...existing, items: updatedItems, subtotal: updatedSubtotal, total: updatedTotal }, order.items);
+        await enqueueKitchenPrint({ ...existing, items: updatedItems, subtotal: updatedSubtotal, total: updatedTotal }, order.items);
         setShowCheckout(false);
         setCart([]);
         navigate('/');
@@ -162,7 +162,7 @@ const NewOrder = () => {
       if (existing) {
         const updated = await addItemsToTableOrder(order.tableReference, order.items, order.subtotal);
         if (updated) {
-          await autoQZPrint(updated, order.items);
+          await enqueueKitchenPrint(updated, order.items);
           setShowCheckout(false);
           setCart([]);
           navigate('/');
@@ -171,18 +171,15 @@ const NewOrder = () => {
       }
     }
     await addOrder(order);
-    await autoQZPrint(order);
+    await enqueueKitchenPrint(order);
     setShowCheckout(false);
 
-    // For entrega/retirada, also print delivery receipt only if all details filled
+    // For entrega/retirada, also enqueue delivery receipt only if all details filled
     if (order.type !== 'mesa' && isDeliveryDetailsFilled(order)) {
-      const hasPrinter = !!getSavedPrinter();
-      if (hasPrinter) {
-        try {
-          const data = buildDeliveryReceipt(order);
-          await printRaw(data);
-        } catch {}
-      }
+      try {
+        const data = buildDeliveryReceipt(order);
+        await enqueuePrint(data, 'delivery', order.id, user?.id, user?.display_name);
+      } catch {}
     }
     setCart([]);
     navigate('/');

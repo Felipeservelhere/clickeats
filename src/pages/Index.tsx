@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Order, OrderType } from '@/types/order';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Flame, MessageCircle } from 'lucide-react';
-import { printRaw, buildKitchenReceipt, getSavedPrinter } from '@/lib/qz-print';
+import { buildKitchenReceipt } from '@/lib/qz-print';
+import { enqueuePrint } from '@/hooks/usePrintQueue';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const typeFilters: { value: OrderType | 'all'; label: string }[] = [
@@ -24,6 +26,7 @@ const typeFilters: { value: OrderType | 'all'; label: string }[] = [
 const Index = () => {
   const navigate = useNavigate();
   const { orders, updateOrder } = useOrders();
+  const { user } = useAuth();
   const { data: dbTables = [] } = useTables();
   const isMobile = useIsMobile();
 
@@ -41,15 +44,11 @@ const Index = () => {
   const completedOrders = filteredOrders.filter(o => o.status === 'completed');
 
   const handleKitchenPrint = async (order: Order) => {
-    const hasPrinter = !!getSavedPrinter();
-    if (hasPrinter) {
-      try {
-        const data = buildKitchenReceipt(order);
-        const ok = await printRaw(data);
-        if (ok) toast.success('Impresso!');
-        else toast.error('Falha na impressão');
-      } catch { toast.error('Erro na impressão'); }
-    } else {
+    try {
+      const data = buildKitchenReceipt(order);
+      await enqueuePrint(data, 'kitchen', order.id, user?.id, user?.display_name);
+      toast.success('Impressão enviada!');
+    } catch {
       setPrintOrder(order);
       setPrintType('kitchen');
       setShowPrint(true);

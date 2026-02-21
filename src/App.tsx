@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OrderProvider } from "@/contexts/OrderContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { usePrintQueueProcessor } from "@/hooks/usePrintQueue";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import NewOrder from "./pages/NewOrder";
@@ -16,6 +17,11 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function PrintQueueRunner() {
+  usePrintQueueProcessor(4000);
+  return null;
+}
+
 function AuthGate() {
   const { user } = useAuth();
 
@@ -23,6 +29,7 @@ function AuthGate() {
 
   return (
     <OrderProvider>
+      <PrintQueueRunner />
       <BrowserRouter>
         <AppLayout>
           <Routes>
