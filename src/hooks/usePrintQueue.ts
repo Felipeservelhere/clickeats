@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { printRaw, getSavedPrinter } from '@/lib/qz-print';
@@ -11,35 +11,60 @@ import { toast } from 'sonner';
 export function usePrintQueueProcessor(intervalMs = 5000) {
   const { user } = useAuth();
   const isPrimary = user?.is_primary === true;
+  const processingRef = useRef(false);
 
   const processPendingPrints = useCallback(async () => {
-    if (!isPrimary) return;
+    if (!isPrimary || processingRef.current) return;
     const hasPrinter = !!getSavedPrinter();
     if (!hasPrinter) return;
 
-    const { data: pending, error } = await supabase
-      .from('fila_impressao')
-      .select('*')
-      .eq('status', 'pendente')
-      .order('data_criacao', { ascending: true })
-      .limit(10);
+    processingRef.current = true;
+    try {
+      const { data: pending, error } = await supabase
+        .from('fila_impressao')
+        .select('*')
+        .eq('status', 'pendente')
+        .order('data_criacao', { ascending: true })
+        .limit(10);
 
-    if (error || !pending || pending.length === 0) return;
+      if (error || !pending || pending.length === 0) return;
 
-    for (const item of pending) {
-      try {
-        const ok = await printRaw(item.dados_impressao);
-        if (ok) {
+      for (const item of pending) {
+        // Mark as processing first to prevent duplicate prints
+        const { error: updateError } = await supabase
+          .from('fila_impressao')
+          .update({ status: 'imprimindo' })
+          .eq('id', item.id)
+          .eq('status', 'pendente');
+
+        // If update affected 0 rows, another instance already picked it up
+        if (updateError) continue;
+
+        try {
+          const ok = await printRaw(item.dados_impressao);
+          if (ok) {
+            await supabase
+              .from('fila_impressao')
+              .update({ status: 'impresso', data_impressao: new Date().toISOString() })
+              .eq('id', item.id);
+          } else {
+            // Revert to pendente so it can be retried
+            await supabase
+              .from('fila_impressao')
+              .update({ status: 'pendente' })
+              .eq('id', item.id);
+            console.error('Print failed for queue item', item.id);
+          }
+        } catch (err) {
           await supabase
             .from('fila_impressao')
-            .update({ status: 'impresso', data_impressao: new Date().toISOString() })
+            .update({ status: 'pendente' })
             .eq('id', item.id);
-        } else {
-          console.error('Print failed for queue item', item.id);
+          console.error('Print error for queue item', item.id, err);
         }
-      } catch (err) {
-        console.error('Print error for queue item', item.id, err);
       }
+    } finally {
+      processingRef.current = false;
     }
   }, [isPrimary]);
 
@@ -61,7 +86,7 @@ export function usePrintQueueProcessor(intervalMs = 5000) {
         table: 'fila_impressao',
       }, () => {
         // Small delay to ensure the row is committed
-        setTimeout(processPendingPrints, 500);
+        setTimeout(processPendingPrints, 1000);
       })
       .subscribe();
 
