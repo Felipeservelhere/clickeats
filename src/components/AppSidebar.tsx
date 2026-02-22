@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Flame, BookOpen, MapPin, Grid3X3, Printer, LogOut, Smartphone } from "lucide-react";
+import { Flame, BookOpen, MapPin, Grid3X3, Printer, LogOut, Smartphone, Sun, Moon } from "lucide-react";
 import logo from "@/assets/logo.svg";
 import { NavLink } from "@/components/NavLink";
 import { PrinterSettings } from "@/components/PrinterSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import {
   Sidebar,
   SidebarContent,
@@ -28,6 +29,7 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
   const collapsed = state === "collapsed";
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <>
@@ -69,6 +71,14 @@ export function AppSidebar() {
               {user.display_name}
             </div>
           )}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors w-full"
+            title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+          >
+            {theme === 'dark' ? <Sun className="h-5 w-5 shrink-0" /> : <Moon className="h-5 w-5 shrink-0" />}
+            {!collapsed && <span className="text-sm">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
+          </button>
           <button
             onClick={() => setShowPrinterSettings(true)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors w-full"
