@@ -31,6 +31,12 @@ function getPaperMmWidth(): number {
   return getSavedPaperWidth() === '58mm' ? 48 : 72;
 }
 
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // Certificate will be loaded from localStorage or set via settings
 export function setCertificate(cert: string) {
   localStorage.setItem('qz-certificate', cert);
@@ -208,22 +214,22 @@ interface ReceiptItem {
 
 function renderPizzaItemKitchen(item: ReceiptItem): string {
   const pd = item.pizzaDetail!;
-  let html = `<div class="item">${item.quantity}X PIZZA ${pd.sizeName.toUpperCase()}</div>`;
+  let html = `<div class="item">${item.quantity}X PIZZA ${escapeHtml(pd.sizeName.toUpperCase())}</div>`;
   const total = pd.flavors.length;
   pd.flavors.forEach((f, idx) => {
-    html += `<div class="sabor">${idx + 1}/${total} ${f.name.toUpperCase()}</div>`;
+    html += `<div class="sabor">${idx + 1}/${total} ${escapeHtml(f.name.toUpperCase())}</div>`;
     f.removedIngredients.forEach(ing => {
-      html += `<div class="sem">S/ ${ing.toUpperCase()}</div>`;
+      html += `<div class="sem">S/ ${escapeHtml(ing.toUpperCase())}</div>`;
     });
     if (f.observation) {
-      html += `<div class="obs">OBS: ${f.observation}</div>`;
+      html += `<div class="obs">OBS: ${escapeHtml(f.observation)}</div>`;
     }
   });
   if (pd.borderName) {
-    html += `<div class="adicional">BORDA: ${pd.borderName.toUpperCase()}</div>`;
+    html += `<div class="adicional">BORDA: ${escapeHtml(pd.borderName.toUpperCase())}</div>`;
   }
   if (item.observation && !item.pizzaDetail) {
-    html += `<div class="obs">OBS: ${item.observation}</div>`;
+    html += `<div class="obs">OBS: ${escapeHtml(item.observation)}</div>`;
   }
   return html;
 }
@@ -231,19 +237,19 @@ function renderPizzaItemKitchen(item: ReceiptItem): string {
 function renderPizzaItemDelivery(item: ReceiptItem): string {
   const pd = item.pizzaDetail!;
   const itemTotal = ((item.product.price || 0) + item.selectedAddons.reduce((a, ad) => a + ((ad as any).price || 0), 0)) * item.quantity;
-  let html = `<div class="item">${item.quantity}X PIZZA ${pd.sizeName.toUpperCase()} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
+  let html = `<div class="item">${item.quantity}X PIZZA ${escapeHtml(pd.sizeName.toUpperCase())} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
   const total = pd.flavors.length;
   pd.flavors.forEach((f, idx) => {
-    html += `<div class="sabor">${idx + 1}/${total} ${f.name.toUpperCase()}</div>`;
+    html += `<div class="sabor">${idx + 1}/${total} ${escapeHtml(f.name.toUpperCase())}</div>`;
     f.removedIngredients.forEach(ing => {
-      html += `<div class="sem">S/ ${ing.toUpperCase()}</div>`;
+      html += `<div class="sem">S/ ${escapeHtml(ing.toUpperCase())}</div>`;
     });
     if (f.observation) {
-      html += `<div class="obs">OBS: ${f.observation}</div>`;
+      html += `<div class="obs">OBS: ${escapeHtml(f.observation)}</div>`;
     }
   });
   if (pd.borderName) {
-    html += `<div class="adicional">BORDA: ${pd.borderName.toUpperCase()}</div>`;
+    html += `<div class="adicional">BORDA: ${escapeHtml(pd.borderName.toUpperCase())}</div>`;
   }
   return html;
 }
@@ -269,7 +275,7 @@ export function buildKitchenReceipt(order: {
   html += `<div class="data">${date} ${time}</div>`;
 
   if (order.customerName) {
-    html += `<div class="info">Cliente: ${order.customerName}</div>`;
+    html += `<div class="info">Cliente: ${escapeHtml(order.customerName)}</div>`;
   }
 
   html += `<div class="linha"></div>`;
@@ -281,14 +287,14 @@ export function buildKitchenReceipt(order: {
       if (item.pizzaDetail) {
         html += renderPizzaItemKitchen(item);
       } else {
-        html += `<div class="item">${item.quantity}x ${item.product.name.toUpperCase()}</div>`;
+        html += `<div class="item">${item.quantity}x ${escapeHtml(item.product.name.toUpperCase())}</div>`;
         if (item.selectedAddons.length > 0) {
           for (const addon of item.selectedAddons) {
-            html += `<div class="adicional">+ ${addon.name}</div>`;
+            html += `<div class="adicional">+ ${escapeHtml(addon.name)}</div>`;
           }
         }
         if (item.observation) {
-          html += `<div class="obs">OBS: ${item.observation}</div>`;
+          html += `<div class="obs">OBS: ${escapeHtml(item.observation)}</div>`;
         }
       }
     }
@@ -350,19 +356,19 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="linha-tracejada"></div>`;
   if (order.customerName) {
     html += `<div class="info-label">CLIENTE:</div>`;
-    html += `<div class="info">${order.customerName}</div>`;
+    html += `<div class="info">${escapeHtml(order.customerName)}</div>`;
   }
   if (order.type === 'entrega') {
     if (order.address) {
       let addr = order.address;
       if (order.addressNumber) addr += `, ${order.addressNumber}`;
       if (order.neighborhood) addr += ` - ${order.neighborhood.name}`;
-      html += `<div class="info">${addr}</div>`;
+      html += `<div class="info">${escapeHtml(addr)}</div>`;
     }
-    if (order.reference) html += `<div class="info">Ref: ${order.reference}</div>`;
+    if (order.reference) html += `<div class="info">Ref: ${escapeHtml(order.reference)}</div>`;
   }
   if (order.customerPhone) {
-    html += `<div class="info">Tel: ${order.customerPhone}</div>`;
+    html += `<div class="info">Tel: ${escapeHtml(order.customerPhone)}</div>`;
   }
   html += `<div class="linha-tracejada"></div>`;
 
@@ -373,14 +379,14 @@ export function buildDeliveryReceipt(order: {
       if (item.pizzaDetail) {
         html += renderPizzaItemDelivery(item);
       } else {
-        html += `<div class="item">${item.quantity}x  ${item.product.name.toUpperCase()}</div>`;
+        html += `<div class="item">${item.quantity}x  ${escapeHtml(item.product.name.toUpperCase())}</div>`;
         if (item.selectedAddons.length > 0) {
           for (const addon of item.selectedAddons) {
-            html += `<div class="adicional">+ ${addon.name}</div>`;
+            html += `<div class="adicional">+ ${escapeHtml(addon.name)}</div>`;
           }
         }
         if (item.observation) {
-          html += `<div class="obs">Obs: ${item.observation}</div>`;
+          html += `<div class="obs">Obs: ${escapeHtml(item.observation)}</div>`;
         }
       }
     }
@@ -389,7 +395,7 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="linha-tracejada"></div>`;
 
   if (order.observation) {
-    html += `<div class="obs">Obs: ${order.observation}</div>`;
+    html += `<div class="obs">Obs: ${escapeHtml(order.observation)}</div>`;
     html += `<div class="linha-tracejada"></div>`;
   }
 
