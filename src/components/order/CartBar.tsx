@@ -55,7 +55,7 @@ export function CartBar({ items, onEditItem, onRemoveItem, onCheckout }: CartBar
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10" onClick={() => onEditItem(item)}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-300 hover:bg-primary-foreground/10" onClick={() => onRemoveItem(item.cartId)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-red-500/30" onClick={() => onRemoveItem(item.cartId)}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -67,7 +67,7 @@ export function CartBar({ items, onEditItem, onRemoveItem, onCheckout }: CartBar
             <span className="font-heading font-bold text-xl text-primary-foreground">R$ {totalPrice.toFixed(2)}</span>
           </div>
 
-          <Button onClick={onCheckout} className="w-full h-12 font-semibold text-base bg-green-600 hover:bg-green-700 text-white border-0">
+          <Button onClick={onCheckout} className="w-full h-12 font-semibold text-base bg-foreground text-background hover:bg-foreground/90 border-0">
             Finalizar Pedido
           </Button>
         </div>
