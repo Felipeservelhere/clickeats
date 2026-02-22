@@ -50,7 +50,7 @@
     --card-foreground: 24 10% 15%;
     --popover: 30 12% 97%;
     --popover-foreground: 24 10% 15%;
-    --primary: 28 90% 52%;
+    --primary: 24 95% 50%;
     --primary-foreground: 0 0% 100%;
     --secondary: 30 10% 90%;
     --secondary-foreground: 24 10% 25%;
@@ -62,22 +62,22 @@
     --destructive-foreground: 0 0% 100%;
     --border: 30 10% 85%;
     --input: 30 10% 88%;
-    --ring: 28 90% 52%;
+    --ring: 24 95% 50%;
 
     --success: 142 71% 40%;
     --success-foreground: 0 0% 100%;
     --order-mesa: 210 70% 50%;
-    --order-entrega: 28 90% 52%;
+    --order-entrega: 24 95% 50%;
     --order-retirada: 142 71% 40%;
 
     --sidebar-background: 30 12% 97%;
     --sidebar-foreground: 24 10% 15%;
-    --sidebar-primary: 28 90% 52%;
+    --sidebar-primary: 24 95% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 30 10% 92%;
     --sidebar-accent-foreground: 24 10% 15%;
     --sidebar-border: 30 10% 85%;
-    --sidebar-ring: 28 90% 52%;
+    --sidebar-ring: 24 95% 50%;
   }
 }
 
