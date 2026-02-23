@@ -156,6 +156,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     if (updates.deliveryFee !== undefined) dbUpdates.delivery_fee = updates.deliveryFee;
     if (updates.paymentMethod !== undefined) dbUpdates.payment_method = updates.paymentMethod;
     if (updates.changeFor !== undefined) dbUpdates.change_for = updates.changeFor;
+    if (updates.tableNumber !== undefined) dbUpdates.table_number = updates.tableNumber;
+    if (updates.tableReference !== undefined) dbUpdates.table_reference = updates.tableReference;
     if (Object.keys(dbUpdates).length > 0) {
       await supabase.from('orders').update(dbUpdates).eq('id', id);
     }
