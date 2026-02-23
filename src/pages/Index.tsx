@@ -6,11 +6,12 @@ import { OrderCard } from '@/components/order/OrderCard';
 import { PrintModal } from '@/components/order/PrintModal';
 import { TableDetailSheet } from '@/components/order/TableDetailSheet';
 import { OrderDetailSheet } from '@/components/order/OrderDetailSheet';
+import { OpenOrderDetailSheet } from '@/components/order/OpenOrderDetailSheet';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Order, OrderType } from '@/types/order';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Flame, MessageCircle } from 'lucide-react';
+import { Plus, Flame, MessageCircle, ClipboardList } from 'lucide-react';
 import { buildKitchenReceipt } from '@/lib/qz-print';
 import { enqueuePrint } from '@/hooks/usePrintQueue';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,9 +40,13 @@ const Index = () => {
   const [completeOrder, setCompleteOrder] = useState<Order | null>(null);
   const [tableDetailOrder, setTableDetailOrder] = useState<Order | null>(null);
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
+  const [openOrderDetail, setOpenOrderDetail] = useState<Order | null>(null);
   const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.type === filter);
   const activeOrders = filteredOrders.filter(o => o.status !== 'completed');
   const completedOrders = filteredOrders.filter(o => o.status === 'completed');
+
+  // Open orders = mesa type with no table assigned
+  const openOrders = orders.filter(o => o.type === 'mesa' && o.status !== 'completed' && !o.tableNumber && !o.tableReference);
 
   const handleKitchenPrint = async (order: Order) => {
     try {
@@ -56,7 +61,6 @@ const Index = () => {
   };
 
   const handleDeliveryPrint = (order: Order) => {
-    // Check if delivery order has required data filled
     if (order.type === 'entrega' && (!order.address || !order.neighborhood || !order.customerName)) {
       toast.error('Preencha os dados de entrega antes de imprimir o resumo (nome, endereço, bairro)');
       setDetailOrder(order);
@@ -74,7 +78,12 @@ const Index = () => {
 
   const handleOrderClick = (order: Order) => {
     if (order.type === 'mesa') {
-      setTableDetailOrder(order);
+      // Check if it's an open order (no table)
+      if (!order.tableNumber && !order.tableReference) {
+        setOpenOrderDetail(order);
+      } else {
+        setTableDetailOrder(order);
+      }
     } else {
       setDetailOrder(order);
     }
@@ -105,9 +114,9 @@ const Index = () => {
     setCompleteOrder(null);
   };
 
-  // Mobile: Table cards view
+  // Mobile: Table cards view + open orders
   if (isMobile) {
-    const tableOrders = orders.filter(o => o.type === 'mesa' && o.status !== 'completed');
+    const tableOrders = orders.filter(o => o.type === 'mesa' && o.status !== 'completed' && (o.tableNumber || o.tableReference));
 
     const getOrderForTable = (num: number) => {
       return tableOrders.find(o => o.tableNumber === num || o.tableReference === String(num));
@@ -115,7 +124,14 @@ const Index = () => {
 
     return (
       <div className="bg-background p-4">
-        <h1 className="font-heading font-bold text-xl mb-4">Mesas</h1>
+        {/* Header with Novo Pedido button */}
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="font-heading font-bold text-xl">Mesas</h1>
+          <Button onClick={() => navigate('/novo-pedido')} size="sm" className="gap-1.5 font-semibold">
+            <Plus className="h-4 w-4" /> Novo Pedido
+          </Button>
+        </div>
+
         <div className="grid grid-cols-4 gap-3">
           {activeTables.map(num => {
             const order = getOrderForTable(num);
@@ -148,7 +164,39 @@ const Index = () => {
             );
           })}
         </div>
+
+        {/* Open Orders Section */}
+        {openOrders.length > 0 && (
+          <div className="mt-6">
+            <h2 className="font-heading font-bold text-xl mb-3 flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" /> Em Aberto
+            </h2>
+            <div className="space-y-2">
+              {openOrders.map(order => (
+                <button
+                  key={order.id}
+                  onClick={() => setOpenOrderDetail(order)}
+                  className="w-full flex items-center justify-between p-3 rounded-xl border-2 border-amber-500/50 bg-amber-500/10 transition-all active:scale-[0.98]"
+                >
+                  <div className="text-left min-w-0">
+                    <p className="font-semibold text-sm truncate">
+                      #{order.number} — {order.customerName || 'Sem nome'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.items.reduce((s, i) => s + i.quantity, 0)} itens
+                    </p>
+                  </div>
+                  <span className="font-heading font-bold text-primary whitespace-nowrap ml-2">
+                    R$ {order.total.toFixed(2)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <TableDetailSheet order={tableDetailOrder} open={!!tableDetailOrder} onClose={() => setTableDetailOrder(null)} />
+        <OpenOrderDetailSheet order={openOrderDetail} open={!!openOrderDetail} onClose={() => setOpenOrderDetail(null)} />
       </div>
     );
   }
@@ -181,8 +229,42 @@ const Index = () => {
           ))}
         </div>
 
+        {/* Open Orders Section */}
+        {openOrders.length > 0 && (
+          <div className="mb-6">
+            <h3 className="font-heading text-sm text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" /> Em Aberto ({openOrders.length})
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+              {openOrders.map(order => (
+                <button
+                  key={order.id}
+                  onClick={() => setOpenOrderDetail(order)}
+                  className="flex flex-col p-4 rounded-xl border-2 border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 transition-all text-left"
+                >
+                  <div className="flex items-center justify-between w-full mb-2">
+                    <span className="font-heading font-bold">#{order.number}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="font-semibold text-sm truncate">{order.customerName || 'Sem nome'}</p>
+                  <div className="flex items-center justify-between w-full mt-2">
+                    <span className="text-xs text-muted-foreground">
+                      {order.items.reduce((s, i) => s + i.quantity, 0)} itens
+                    </span>
+                    <span className="font-heading font-bold text-primary">
+                      R$ {order.total.toFixed(2)}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Active orders */}
-        {activeOrders.length === 0 && completedOrders.length === 0 && (
+        {activeOrders.length === 0 && completedOrders.length === 0 && openOrders.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Flame className="h-16 w-16 text-muted-foreground/30 mb-4" />
             <h2 className="font-heading text-xl text-muted-foreground mb-2">Nenhum pedido ainda</h2>
@@ -236,6 +318,9 @@ const Index = () => {
 
       {/* Table Detail */}
       <TableDetailSheet order={tableDetailOrder} open={!!tableDetailOrder} onClose={() => setTableDetailOrder(null)} />
+
+      {/* Open Order Detail */}
+      <OpenOrderDetailSheet order={openOrderDetail} open={!!openOrderDetail} onClose={() => setOpenOrderDetail(null)} />
 
       {/* Order Detail (entrega/retirada) */}
       <OrderDetailSheet

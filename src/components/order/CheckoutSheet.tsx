@@ -13,7 +13,7 @@ import { useTables } from '@/hooks/useTables';
 import { useCustomerAddresses, useCreateCustomer, useCreateCustomerAddress, Customer, CustomerAddress } from '@/hooks/useCustomers';
 import { CustomerAutocomplete } from '@/components/order/CustomerAutocomplete';
 import { TableSelectorModal } from '@/components/order/TableSelectorModal';
-import { MapPin, Truck, Store, UtensilsCrossed, Banknote, CreditCard, QrCode, MoreHorizontal, Home } from 'lucide-react';
+import { MapPin, Truck, Store, UtensilsCrossed, Banknote, CreditCard, QrCode, MoreHorizontal, Home, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CheckoutSheetProps {
@@ -181,7 +181,15 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
 
   const changeAmount = paymentMethod === 'dinheiro' && changeFor ? parseFloat(changeFor) - total : 0;
 
+  const isOpenOrder = orderType === 'mesa' && !isMesaMode && !selectedTableNum && !mesaReference.trim();
+
   const handleFinalize = async () => {
+    // Validate: open orders require customer name
+    if (isOpenOrder && !customerName.trim()) {
+      toast.error('Para pedido em aberto, o nome do cliente é obrigatório');
+      return;
+    }
+
     // Auto-save customer if new
     if (!selectedCustomer && customerName.trim()) {
       try {
@@ -290,7 +298,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
             {showTypeSelector && (
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Tipo do Pedido</h4>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {(['entrega', 'retirada', 'mesa'] as OrderType[]).map(type => (
                     <button
                       key={type}
@@ -308,9 +316,24 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
                       }`}
                     >
                       {typeIcons[type]}
-                      <span className="text-sm font-semibold">{typeLabels[type]}</span>
+                      <span className="text-xs font-semibold">{typeLabels[type]}</span>
                     </button>
                   ))}
+                  <button
+                    onClick={() => {
+                      setOrderType('mesa');
+                      setSelectedTableNum(null);
+                      setMesaReference('');
+                    }}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
+                      orderType === 'mesa' && !selectedTableNum && !mesaReference
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-600'
+                        : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
+                    }`}
+                  >
+                    <ClipboardList className="h-4 w-4" />
+                    <span className="text-xs font-semibold">Em Aberto</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -377,7 +400,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
               </div>
             )}
 
-            {orderType === 'mesa' && !isMesaMode && (
+            {orderType === 'mesa' && !isMesaMode && !isOpenOrder && (
               <div className="space-y-3 animate-fade-in">
                 <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Mesa</h4>
                 {selectedTableNum ? (
