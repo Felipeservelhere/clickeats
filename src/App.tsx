@@ -14,6 +14,7 @@ import Taxas from "./pages/Taxas";
 import Mesas from "./pages/Mesas";
 import AppInstall from "./pages/AppInstall";
 import Login from "./pages/Login";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,9 +25,11 @@ function PrintQueueRunner() {
 }
 
 function AuthGate() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
 
-  if (!user) return <Login />;
+  if (!user && role !== 'admin') return <Login />;
+
+  if (role === 'admin') return <AdminDashboard />;
 
   return (
     <OrderProvider>

@@ -6,11 +6,29 @@ interface AppUser {
   username: string;
   display_name: string;
   is_primary: boolean;
+  company_id?: string;
+}
+
+interface AdminUser {
+  id: string;
+  username: string;
+  display_name: string;
+}
+
+interface CompanyInfo {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
 }
 
 interface AuthContextType {
   user: AppUser | null;
+  adminUser: AdminUser | null;
+  company: CompanyInfo | null;
+  role: 'admin' | 'user' | null;
   login: (username: string, password: string) => Promise<string | null>;
+  loginAdmin: (username: string, password: string) => Promise<string | null>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -25,6 +43,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       return null;
     }
+  });
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('admin-user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [company, setCompany] = useState<CompanyInfo | null>(() => {
+    try {
+      const saved = localStorage.getItem('app-company');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [role, setRole] = useState<'admin' | 'user' | null>(() => {
+    if (localStorage.getItem('admin-user')) return 'admin';
+    if (localStorage.getItem('app-user')) return 'user';
+    return null;
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -43,7 +82,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const appUser: AppUser = result.user;
       setUser(appUser);
+      setAdminUser(null);
+      setRole('user');
       localStorage.setItem('app-user', JSON.stringify(appUser));
+      localStorage.removeItem('admin-user');
+
+      if (result.company) {
+        setCompany(result.company);
+        localStorage.setItem('app-company', JSON.stringify(result.company));
+      }
+
+      return null;
+    } catch {
+      return 'Erro inesperado. Tente novamente.';
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loginAdmin = useCallback(async (username: string, password: string): Promise<string | null> => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('authenticate_admin', {
+        p_username: username,
+        p_password: password,
+      });
+
+      if (error) return 'Erro ao conectar. Tente novamente.';
+
+      const result = data as any;
+      if (!result.success) return result.message;
+
+      const admin: AdminUser = result.user;
+      setAdminUser(admin);
+      setUser(null);
+      setCompany(null);
+      setRole('admin');
+      localStorage.setItem('admin-user', JSON.stringify(admin));
+      localStorage.removeItem('app-user');
+      localStorage.removeItem('app-company');
+
       return null;
     } catch {
       return 'Erro inesperado. Tente novamente.';
@@ -54,11 +132,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
+    setAdminUser(null);
+    setCompany(null);
+    setRole(null);
     localStorage.removeItem('app-user');
+    localStorage.removeItem('admin-user');
+    localStorage.removeItem('app-company');
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, adminUser, company, role, login, loginAdmin, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
