@@ -754,6 +754,10 @@ export type Database = {
         Args: { p_password: string; p_username: string }
         Returns: Json
       }
+      authenticate_any: {
+        Args: { p_password: string; p_username: string }
+        Returns: Json
+      }
       authenticate_user: {
         Args: { p_password: string; p_username: string }
         Returns: Json

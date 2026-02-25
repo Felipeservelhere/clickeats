@@ -67,16 +67,18 @@ export default function AdminDashboard() {
   const { data: companies = [] } = useQuery({
     queryKey: ['admin-companies'],
     queryFn: async () => {
-      const { data } = await supabase.rpc('admin_list_companies');
-      return (data as unknown as Company[]) || [];
+      const { data, error } = await supabase.rpc('admin_list_companies');
+      if (error) { console.error('admin_list_companies error:', error); return []; }
+      return Array.isArray(data) ? (data as unknown as Company[]) : [];
     },
   });
 
   const { data: admins = [] } = useQuery({
     queryKey: ['admin-admins'],
     queryFn: async () => {
-      const { data } = await supabase.rpc('admin_list_admins');
-      return (data as unknown as AdminUserRow[]) || [];
+      const { data, error } = await supabase.rpc('admin_list_admins');
+      if (error) { console.error('admin_list_admins error:', error); return []; }
+      return Array.isArray(data) ? (data as unknown as AdminUserRow[]) : [];
     },
   });
 
@@ -84,8 +86,9 @@ export default function AdminDashboard() {
     queryKey: ['admin-company-users', selectedCompany?.id],
     queryFn: async () => {
       if (!selectedCompany) return [];
-      const { data } = await supabase.rpc('admin_list_company_users', { p_company_id: selectedCompany.id });
-      return (data as unknown as CompanyUser[]) || [];
+      const { data, error } = await supabase.rpc('admin_list_company_users', { p_company_id: selectedCompany.id });
+      if (error) { console.error('admin_list_company_users error:', error); return []; }
+      return Array.isArray(data) ? (data as unknown as CompanyUser[]) : [];
     },
     enabled: !!selectedCompany,
   });
