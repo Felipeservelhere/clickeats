@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { getPrinters, savePrinter, getSavedPrinter, setCertificate, setPrivateKey, connectQZ, printRaw, getSavedPaperWidth, savePaperWidth, getSavedPrintMode, savePrintMode, PaperWidth, PrintMode } from '@/lib/qz-print';
+import { getPrinters, savePrinter, getSavedPrinter, setCertificate, setPrivateKey, connectQZ, printRaw, getSavedPaperWidth, savePaperWidth, getSavedPrintMode, savePrintMode, getSavedPrinterModel, savePrinterModel, PaperWidth, PrintMode, PrinterModel } from '@/lib/qz-print';
 import { toast } from 'sonner';
 import { Printer, Settings2, Check, Wifi, WifiOff, FileText, Upload, Monitor } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
   const [autoPrint, setAutoPrint] = useState(localStorage.getItem('qz-auto-print') === 'true');
   const [paperWidth, setPaperWidth] = useState<PaperWidth>(getSavedPaperWidth());
   const [printMode, setPrintMode] = useState<PrintMode>(getSavedPrintMode());
+  const [printerModel, setPrinterModel] = useState<PrinterModel>(getSavedPrinterModel());
 
   useEffect(() => {
     if (open && printMode === 'escpos') loadPrinters();
@@ -98,6 +99,13 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
     toast.success(m === 'escpos' ? 'Modo: Impressão direta (ESC/POS)' : 'Modo: Impressão via navegador');
   };
 
+  const handlePrinterModelChange = (val: string) => {
+    const m = val as PrinterModel;
+    setPrinterModel(m);
+    savePrinterModel(m);
+    toast.success(m === 'zkt-eco' ? 'Modelo: ZKT Eco (margens ajustadas)' : 'Modelo: Impressora padrão');
+  };
+
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto">
@@ -144,7 +152,30 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
             </Select>
           </div>
 
-          {/* ESC/POS specific settings */}
+          {/* Printer model */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Modelo da Impressora</Label>
+            <Select value={printerModel} onValueChange={handlePrinterModelChange}>
+              <SelectTrigger className="bg-secondary/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">
+                  <div className="flex items-center gap-2">
+                    <Printer className="h-4 w-4" /> Padrão
+                  </div>
+                </SelectItem>
+                <SelectItem value="zkt-eco">
+                  <div className="flex items-center gap-2">
+                    <Printer className="h-4 w-4" /> ZKT Eco
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {printerModel === 'zkt-eco' && (
+              <p className="text-xs text-muted-foreground">Margens ajustadas para cima e esquerda automaticamente</p>
+            )}
+          </div>
           {printMode === 'escpos' && (
             <>
               {/* Connection status */}

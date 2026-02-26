@@ -6,6 +6,7 @@ let connected = false;
 // ─── Paper width config ───
 export type PaperWidth = '58mm' | '80mm';
 export type PrintMode = 'escpos' | 'browser';
+export type PrinterModel = 'standard' | 'zkt-eco';
 
 export function getSavedPaperWidth(): PaperWidth {
   return (localStorage.getItem('qz-paper-width') as PaperWidth) || '80mm';
@@ -21,6 +22,14 @@ export function getSavedPrintMode(): PrintMode {
 
 export function savePrintMode(mode: PrintMode) {
   localStorage.setItem('qz-print-mode', mode);
+}
+
+export function getSavedPrinterModel(): PrinterModel {
+  return (localStorage.getItem('qz-printer-model') as PrinterModel) || 'standard';
+}
+
+export function savePrinterModel(model: PrinterModel) {
+  localStorage.setItem('qz-printer-model', model);
 }
 
 function getPaperPixelWidth(): number {
@@ -147,6 +156,8 @@ export function savePrinter(name: string) {
 
 function getReceiptStyle(): string {
   const width = getPaperPixelWidth();
+  const isZkt = getSavedPrinterModel() === 'zkt-eco';
+  const bodyPadding = isZkt ? 'padding: 0 0 0 0; margin: -4px 0 0 -6px;' : 'padding: 2px;';
   return `
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -158,7 +169,7 @@ function getReceiptStyle(): string {
     text-align: left;
     color: #000;
     background: #fff;
-    padding: 2px;
+    ${bodyPadding}
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     overflow-wrap: break-word;
@@ -189,8 +200,8 @@ function getReceiptStyle(): string {
     body { width: 100%; max-width: 100%; }
   }
 </style>
-`;
-}
+`;}
+
 
 function formatDateTime(iso: string) {
   const d = new Date(iso);
@@ -485,8 +496,11 @@ export async function printRaw(data: string, printerName?: string): Promise<bool
 
   try {
     const paperMm = getPaperMmWidth();
+    const isZkt = getSavedPrinterModel() === 'zkt-eco';
     const config = qz.configs.create(printer, {
-      margins: { top: 0, right: 0, bottom: 0, left: 0 },
+      margins: isZkt
+        ? { top: -2, right: 0, bottom: 0, left: -1 }
+        : { top: 0, right: 0, bottom: 0, left: 0 },
       units: 'mm',
       size: { width: paperMm },
       colorType: 'grayscale',
