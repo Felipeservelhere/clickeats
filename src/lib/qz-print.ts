@@ -157,7 +157,7 @@ export function savePrinter(name: string) {
 function getReceiptStyle(): string {
   const width = getPaperPixelWidth();
   const isZkt = getSavedPrinterModel() === 'zkt-eco';
-  const bodyPadding = isZkt ? 'padding: 0; margin: -10px 0 0 -10px;' : 'padding: 2px;';
+  const bodyPadding = isZkt ? 'padding: 0; margin: -20px 0 0 -14px;' : 'padding: 2px;';
   return `
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -182,8 +182,8 @@ function getReceiptStyle(): string {
   .data { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: bold; margin-bottom: 2px; text-align: center; }
   .info { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; margin-bottom: 2px; text-align: ${isZkt ? 'center' : 'left'}; overflow-wrap: break-word; }
   .info-label { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin-bottom: 2px; text-align: left; }
-  .grupo { background: #000; color: #fff; padding: 3px 6px; margin: 4px 0 3px; font-weight: 900; font-size: ${width < 250 ? '13px' : '16px'}; text-align: center; }
-  .item { margin: 2px 0; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; padding-left: 2px; overflow-wrap: break-word; word-break: break-word; }
+  .grupo { background: #000; color: #fff; padding: 3px 6px; margin: 4px ${isZkt ? '-14px' : '0'} 3px; font-weight: 900; font-size: ${width < 250 ? '13px' : '16px'}; text-align: center; }
+  .item { margin: 2px 0; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; padding-left: ${isZkt ? '16px' : '2px'}; overflow-wrap: break-word; word-break: break-word; }
   .adicional { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: bold; padding-left: ${width < 250 ? '12px' : '20px'}; overflow-wrap: break-word; }
   .obs { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${width < 250 ? '12px' : '20px'}; overflow-wrap: break-word; }
   .sabor { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: bold; padding-left: ${width < 250 ? '10px' : '16px'}; margin: 2px 0; }
@@ -499,7 +499,7 @@ export async function printRaw(data: string, printerName?: string): Promise<bool
     const isZkt = getSavedPrinterModel() === 'zkt-eco';
     const config = qz.configs.create(printer, {
       margins: isZkt
-        ? { top: -4, right: 0, bottom: 0, left: -3 }
+        ? { top: -6, right: 0, bottom: 0, left: -4 }
         : { top: 0, right: 0, bottom: 0, left: 0 },
       units: 'mm',
       size: { width: paperMm },
