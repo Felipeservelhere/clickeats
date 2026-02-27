@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { getPrinters, savePrinter, getSavedPrinter, setCertificate, setPrivateKey, connectQZ, printRaw, getSavedPaperWidth, savePaperWidth, getSavedPrintMode, savePrintMode, getSavedPrinterModel, savePrinterModel, PaperWidth, PrintMode, PrinterModel } from '@/lib/qz-print';
+import { getPrinters, savePrinter, getSavedPrinter, connectQZ, printRaw, getSavedPaperWidth, savePaperWidth, getSavedPrintMode, savePrintMode, getSavedPrinterModel, savePrinterModel, PaperWidth, PrintMode, PrinterModel } from '@/lib/qz-print';
 import { toast } from 'sonner';
-import { Printer, Settings2, Check, Wifi, WifiOff, FileText, Upload, Monitor } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Printer, Settings2, Check, Wifi, WifiOff, FileText, Monitor } from 'lucide-react';
+
 
 interface PrinterSettingsProps {
   open: boolean;
@@ -19,8 +19,6 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
   const [selectedPrinter, setSelectedPrinter] = useState(getSavedPrinter() || '');
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [certText, setCertText] = useState(localStorage.getItem('qz-certificate') || '');
-  const [keyText, setKeyText] = useState(localStorage.getItem('qz-private-key') || '');
   const [autoPrint, setAutoPrint] = useState(localStorage.getItem('qz-auto-print') === 'true');
   const [paperWidth, setPaperWidth] = useState<PaperWidth>(getSavedPaperWidth());
   const [printMode, setPrintMode] = useState<PrintMode>(getSavedPrintMode());
@@ -46,38 +44,6 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
       savePrinter(selectedPrinter);
       toast.success(`Impressora salva: ${selectedPrinter}`);
     }
-  };
-
-  const handleCertUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      if (text?.trim()) {
-        setCertificate(text.trim());
-        setCertText(text.trim());
-        toast.success('Certificado carregado com sucesso!');
-        loadPrinters();
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleKeyUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      if (text?.trim()) {
-        setPrivateKey(text.trim());
-        setKeyText(text.trim());
-        toast.success('Chave privada carregada! Reconectando...');
-        loadPrinters();
-      }
-    };
-    reader.readAsText(file);
   };
 
   const handleAutoChange = (val: boolean) => {
@@ -215,36 +181,7 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
                 </ol>
               </div>
 
-              {/* Certificate upload */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Certificado (qz.crt)</Label>
-                <div className="flex items-center gap-2">
-                  <label className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm">
-                      <Upload className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{certText ? 'Certificado carregado ✓' : 'Fazer upload do qz.crt'}</span>
-                    </div>
-                    <Input type="file" accept=".crt,.pem,.txt" className="hidden" onChange={handleCertUpload} />
-                  </label>
-                </div>
-                {certText && <p className="text-xs text-success">Certificado configurado</p>}
-              </div>
 
-              {/* Private key upload */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Chave Privada (.key)</Label>
-                <div className="flex items-center gap-2">
-                  <label className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm">
-                      <Upload className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{keyText ? 'Chave privada carregada ✓' : 'Fazer upload do private-key.pem'}</span>
-                    </div>
-                    <Input type="file" accept=".key,.pem,.txt" className="hidden" onChange={handleKeyUpload} />
-                  </label>
-                </div>
-                {keyText && <p className="text-xs text-success">Chave privada configurada — "Remember" vai funcionar!</p>}
-                {!keyText && <p className="text-xs text-muted-foreground">Necessário para marcar "Remember this decision" no QZ Tray</p>}
-              </div>
 
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Impressora</Label>
