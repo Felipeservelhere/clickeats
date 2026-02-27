@@ -276,7 +276,7 @@ export function buildKitchenReceipt(order: {
 }): string {
   const RECEIPT_STYLE = getReceiptStyle();
   const typeLabel = order.type === 'mesa'
-    ? `MESA #${order.tableReference || order.tableNumber}`
+    ? `MESA #${order.tableNumber || order.tableReference}`
     : order.type === 'entrega' ? `ENTREGA #${order.number}` : `RETIRADA #${order.number}`;
   const { date, time } = formatDateTime(order.createdAt);
 
@@ -355,7 +355,7 @@ export function buildDeliveryReceipt(order: {
 }): string {
   const RECEIPT_STYLE = getReceiptStyle();
   const typeLabel = order.type === 'mesa'
-    ? `MESA #${order.tableReference || order.tableNumber}`
+    ? `MESA #${order.tableNumber || order.tableReference}`
     : order.type === 'entrega' ? `ENTREGA #${order.number}` : `RETIRADA #${order.number}`;
   const { date, time } = formatDateTime(order.createdAt);
 
@@ -364,23 +364,10 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="tipo">${typeLabel}</div>`;
   html += `<div class="data">${date} ${time}</div>`;
 
-  html += `<div class="linha-tracejada"></div>`;
   if (order.customerName) {
-    html += `<div class="info-label">CLIENTE:</div>`;
     html += `<div class="info">${escapeHtml(order.customerName)}</div>`;
   }
-  if (order.type === 'entrega') {
-    if (order.address) {
-      let addr = order.address;
-      if (order.addressNumber) addr += `, ${order.addressNumber}`;
-      if (order.neighborhood) addr += ` - ${order.neighborhood.name}`;
-      html += `<div class="info">${escapeHtml(addr)}</div>`;
-    }
-    if (order.reference) html += `<div class="info">Ref: ${escapeHtml(order.reference)}</div>`;
-  }
-  if (order.customerPhone) {
-    html += `<div class="info">Tel: ${escapeHtml(order.customerPhone)}</div>`;
-  }
+
   html += `<div class="linha-tracejada"></div>`;
 
   const grouped = groupItemsByCategory(order.items);
@@ -401,6 +388,19 @@ export function buildDeliveryReceipt(order: {
         }
       }
     }
+  }
+
+  html += `<div class="linha-tracejada"></div>`;
+
+  if (order.type === 'entrega') {
+    if (order.address) {
+      html += `<div class="info">Endereço: ${escapeHtml(order.address)}${order.addressNumber ? `, ${escapeHtml(order.addressNumber)}` : ''}</div>`;
+    }
+    if (order.reference) html += `<div class="info">Referência: ${escapeHtml(order.reference)}</div>`;
+    if (order.neighborhood) html += `<div class="info">Bairro: ${escapeHtml(order.neighborhood.name)}</div>`;
+  }
+  if (order.customerPhone) {
+    html += `<div class="info">Telefone: ${escapeHtml(order.customerPhone)}</div>`;
   }
 
   html += `<div class="linha-tracejada"></div>`;
