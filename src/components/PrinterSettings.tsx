@@ -20,7 +20,6 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [autoPrint, setAutoPrint] = useState(localStorage.getItem('qz-auto-print') === 'true');
-  const [autoPrint, setAutoPrint] = useState(localStorage.getItem('qz-auto-print') === 'true');
   const [paperWidth, setPaperWidth] = useState<PaperWidth>(getSavedPaperWidth());
   const [printMode, setPrintMode] = useState<PrintMode>(getSavedPrintMode());
   const [printerModel, setPrinterModel] = useState<PrinterModel>(getSavedPrinterModel());
