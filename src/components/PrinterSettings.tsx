@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { getPrinters, savePrinter, getSavedPrinter, setCertificate, setPrivateKey, connectQZ, printRaw, getSavedPaperWidth, savePaperWidth, getSavedPrintMode, savePrintMode, getSavedPrinterModel, savePrinterModel, PaperWidth, PrintMode, PrinterModel } from '@/lib/qz-print';
+import { getPrinters, savePrinter, getSavedPrinter, connectQZ, printRaw, getSavedPaperWidth, savePaperWidth, getSavedPrintMode, savePrintMode, getSavedPrinterModel, savePrinterModel, PaperWidth, PrintMode, PrinterModel } from '@/lib/qz-print';
 import { toast } from 'sonner';
-import { Printer, Settings2, Check, Wifi, WifiOff, FileText, Upload, Monitor } from 'lucide-react';
+import { Printer, Settings2, Check, Wifi, WifiOff, FileText, Monitor } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface PrinterSettingsProps {

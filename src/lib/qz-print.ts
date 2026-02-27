@@ -201,11 +201,10 @@ function getReceiptStyle(): string {
     word-wrap: break-word;
     word-break: break-word;
   }
-  .logo { text-align: center; margin-bottom: 4px; }
-  .logo img { max-width: ${Math.min(width - 20, 180)}px; margin: 0 auto; filter: invert(1); }
+  .logo { text-align: center; margin-bottom: 4px; font-size: ${width < 250 ? '18px' : '22px'}; font-weight: 900; letter-spacing: 2px; }
   .tipo { font-size: ${width < 250 ? '16px' : '20px'}; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
   .data { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: bold; margin-bottom: 2px; text-align: center; }
-  .info { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; margin-bottom: 2px; text-align: ${isZkt ? 'center' : 'left'}; overflow-wrap: break-word; }
+  .info { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; margin-bottom: 2px; text-align: left; padding-left: ${isZkt ? '16px' : '2px'}; overflow-wrap: break-word; }
   .info-label { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin-bottom: 2px; text-align: left; }
   .grupo { background: #000; color: #fff; padding: 3px 6px; margin: 4px ${isZkt ? '-14px' : '0'} 3px; font-weight: 900; font-size: ${width < 250 ? '13px' : '16px'}; text-align: center; }
   .item { margin: 2px 0; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; padding-left: ${isZkt ? '16px' : '2px'}; overflow-wrap: break-word; word-break: break-word; }
@@ -215,11 +214,11 @@ function getReceiptStyle(): string {
   .sem { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${width < 250 ? '18px' : '28px'}; color: #000; }
   .linha { border-top: 2px solid #000; margin: 4px 0; }
   .linha-tracejada { border-top: 2px dashed #000; margin: 4px 0; }
-  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin: 2px 0; padding: 0 2px; }
+  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin: 2px 0; padding: 0 ${isZkt ? '16px' : '2px'}; }
   .total-row.grande { font-size: ${width < 250 ? '18px' : '22px'}; }
   .total { font-weight: 900; font-size: ${width < 250 ? '18px' : '22px'}; text-align: center; margin-top: 4px; }
   .subtotal { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; text-align: center; }
-  .pgto { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: 2px; margin: 2px 0; overflow-wrap: break-word; }
+  .pgto { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${isZkt ? '16px' : '2px'}; margin: 2px 0; overflow-wrap: break-word; }
   @media print {
     @page { margin: 0; size: ${getSavedPaperWidth() === '58mm' ? '58mm' : '80mm'} auto; }
     body { width: 100%; max-width: 100%; }
@@ -306,7 +305,7 @@ export function buildKitchenReceipt(order: {
   const { date, time } = formatDateTime(order.createdAt);
 
   let html = `<html><head>${RECEIPT_STYLE}</head><body><div class="ticket">`;
-  html += `<div class="logo"><img src="${window.location.origin}/logo.svg" /></div>`;
+  html += `<div class="logo">CLICKEATS</div>`;
   html += `<div class="tipo">${typeLabel}</div>`;
   html += `<div class="data">${date} ${time}</div>`;
 
@@ -385,12 +384,22 @@ export function buildDeliveryReceipt(order: {
   const { date, time } = formatDateTime(order.createdAt);
 
   let html = `<html><head>${RECEIPT_STYLE}</head><body><div class="ticket">`;
-  html += `<div class="logo"><img src="${window.location.origin}/logo.svg" /></div>`;
+  html += `<div class="logo">CLICKEATS</div>`;
   html += `<div class="tipo">${typeLabel}</div>`;
   html += `<div class="data">${date} ${time}</div>`;
 
   if (order.customerName) {
     html += `<div class="info">${escapeHtml(order.customerName)}</div>`;
+  }
+  if (order.type === 'entrega') {
+    if (order.address) {
+      html += `<div class="info">Endereço: ${escapeHtml(order.address)}${order.addressNumber ? `, ${escapeHtml(order.addressNumber)}` : ''}</div>`;
+    }
+    if (order.reference) html += `<div class="info">Referência: ${escapeHtml(order.reference)}</div>`;
+    if (order.neighborhood) html += `<div class="info">Bairro: ${escapeHtml(order.neighborhood.name)}</div>`;
+  }
+  if (order.customerPhone) {
+    html += `<div class="info">Telefone: ${escapeHtml(order.customerPhone)}</div>`;
   }
 
   html += `<div class="linha-tracejada"></div>`;
@@ -402,7 +411,7 @@ export function buildDeliveryReceipt(order: {
       if (item.pizzaDetail) {
         html += renderPizzaItemDelivery(item);
       } else {
-        html += `<div class="item">${item.quantity}x  ${escapeHtml(item.product.name.toUpperCase())}</div>`;
+        html += `<div class="item">${item.quantity}x ${escapeHtml(item.product.name.toUpperCase())}</div>`;
         if (item.selectedAddons.length > 0) {
           for (const addon of item.selectedAddons) {
             html += `<div class="adicional">+ ${escapeHtml(addon.name)}</div>`;
@@ -413,19 +422,6 @@ export function buildDeliveryReceipt(order: {
         }
       }
     }
-  }
-
-  html += `<div class="linha-tracejada"></div>`;
-
-  if (order.type === 'entrega') {
-    if (order.address) {
-      html += `<div class="info">Endereço: ${escapeHtml(order.address)}${order.addressNumber ? `, ${escapeHtml(order.addressNumber)}` : ''}</div>`;
-    }
-    if (order.reference) html += `<div class="info">Referência: ${escapeHtml(order.reference)}</div>`;
-    if (order.neighborhood) html += `<div class="info">Bairro: ${escapeHtml(order.neighborhood.name)}</div>`;
-  }
-  if (order.customerPhone) {
-    html += `<div class="info">Telefone: ${escapeHtml(order.customerPhone)}</div>`;
   }
 
   html += `<div class="linha-tracejada"></div>`;
