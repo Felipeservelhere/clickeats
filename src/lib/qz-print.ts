@@ -498,9 +498,7 @@ export async function printRaw(data: string, printerName?: string): Promise<bool
     const paperMm = getPaperMmWidth();
     const isZkt = getSavedPrinterModel() === 'zkt-eco';
     const config = qz.configs.create(printer, {
-      margins: isZkt
-        ? { top: -6, right: 0, bottom: 0, left: -4 }
-        : { top: 0, right: 0, bottom: 0, left: 0 },
+      margins: { top: 0, right: 0, bottom: 0, left: 0 },
       units: 'mm',
       size: { width: paperMm },
       colorType: 'grayscale',
