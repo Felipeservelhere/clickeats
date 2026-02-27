@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { getPrinters, savePrinter, getSavedPrinter, connectQZ, printRaw, getSavedPaperWidth, savePaperWidth, getSavedPrintMode, savePrintMode, getSavedPrinterModel, savePrinterModel, PaperWidth, PrintMode, PrinterModel } from '@/lib/qz-print';
 import { toast } from 'sonner';
 import { Printer, Settings2, Check, Wifi, WifiOff, FileText, Monitor } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+
 
 interface PrinterSettingsProps {
   open: boolean;
