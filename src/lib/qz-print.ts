@@ -46,58 +46,83 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
-// Certificate will be loaded from localStorage or set via settings
-export function setCertificate(cert: string) {
-  localStorage.setItem('qz-certificate', cert);
-  qz.security.setCertificatePromise((resolve) => {
-    resolve(cert);
-  });
-}
+// Embedded certificate and private key
+const EMBEDDED_CERT = `-----BEGIN CERTIFICATE-----
+MIID7jCCAtagAwIBAgIUMLF4nfdjwIlyzl1U/qm89VSmv4wwDQYJKoZIhvcNAQEL
+BQAwfjELMAkGA1UEBhMCQlIxDzANBgNVBAgMBlBBUkFOQTEPMA0GA1UEBwwGWEFN
+QlJFMQ8wDQYDVQQKDAZDQUxPUlkxDzANBgNVBAMMBkZFTElQRTErMCkGCSqGSIb3
+DQEJARYcRkVMSVBFU0VSVkVMSEVSRTExQEdNQUlMLkNPTTAeFw0yNTExMTgwMDM5
+MzVaFw0zNTExMTYwMDM5MzVaMH4xCzAJBgNVBAYTAkJSMQ8wDQYDVQQIDAZQQVJB
+TkExDzANBgNVBAcMBlhBTUJSRTEPMA0GA1UECgwGQ0FMT1JZMQ8wDQYDVQQDDAZG
+RUxJUEUxKzApBgkqhkiG9w0BCQEWHEZFTElQRVNFUlZFTEhFUkUxMUBHTUFJTC5D
+T00wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCtnI8O/CrR5q3h1L37
+4RbFvIYCLOaz91+WYXfpEQa4SXWSTWK22LMVUlM4RMDuI84PP5AHCXQqUitd8dtT
+uraqCWyUAZNvxCpKaQhZQJPj2LPNlAZO7TqtPq0oGcbDlw45fHtH6fMVi+63SzLj
+W7UncxFOeyYUN5enbG5dnfba2NB9ncaMnTbtOquZquwhcnDakglj3zoVaCtRu760
+LT9v0QQ6Jlys/CLHmpiEkkfih4/XXSy1odvOYOH2eTe03VTDFgmnNX3DyI+U86FM
+ZEcPZArSFBSJ7LnFTzVAEJDxM0TNArIQ0ey0seNEehl4IBj/WT5DKnldGt95ClFS
+D3vbAgMBAAGjZDBiMAsGA1UdDwQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDAjAd
+BgNVHQ4EFgQUacDlPGJOB4PxskHzUNHkXlS7368wHwYDVR0jBBgwFoAU3OkBKRYv
+0S62efsVSDRVzfIKPJ8wDQYJKoZIhvcNAQELBQADggEBAKzcGIOTSijfoMSh0+AM
+91XedzZ/2/aD4fCpYjQkDIxZ/udbYz6Am5XIxUrvpqhqJEAp125PuZBVihgV48vV
+8H5okMvymS9VfSzIEcen1Gd+PecGw0uGVd2ssqVCuPxsscoPbjq2WAxHU0QXLj5N
+9SqvmTZE2Hq556z1teV6OKrq2RoXRDHT9jzY5VdCpPjgQlQHjVMfIyUPflUdrUez
+A1VmLY5fGkwQQCglYC6Mbq5OohehvMu2MqpjPgl3RH05QBBNApl+R9aCY7bmcEBR
+GIgOvc7goIsXncyH4LqS+QGzTStT3Utrtztza4r8qYzNhc/w73Pv/fMJie+ZJPR9
+8jw=
+-----END CERTIFICATE-----`;
 
-export function setPrivateKey(key: string) {
-  localStorage.setItem('qz-private-key', key);
-}
+const EMBEDDED_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCtnI8O/CrR5q3h
+1L374RbFvIYCLOaz91+WYXfpEQa4SXWSTWK22LMVUlM4RMDuI84PP5AHCXQqUitd
+8dtTuraqCWyUAZNvxCpKaQhZQJPj2LPNlAZO7TqtPq0oGcbDlw45fHtH6fMVi+63
+SzLjW7UncxFOeyYUN5enbG5dnfba2NB9ncaMnTbtOquZquwhcnDakglj3zoVaCtR
+u760LT9v0QQ6Jlys/CLHmpiEkkfih4/XXSy1odvOYOH2eTe03VTDFgmnNX3DyI+U
+86FMZEcPZArSFBSJ7LnFTzVAEJDxM0TNArIQ0ey0seNEehl4IBj/WT5DKnldGt95
+ClFSD3vbAgMBAAECggEADoOGRtZC+ChE72+7Gum0NH9bDqcqpESbxkp2B/3R5inR
+/T318Nud4RGa/nBqVp5CAEQBP5gFO50snfPLBlgXeZCZy1J0Z8VqVFfX3apIktA6
+JodnnZqMgLuQJfLoYHqU3a5v71D6GZozWznF/SbctqRn1SagxijoRz6z3U9djz7/
+XcJHKCm0YRFgpP+eUOnCZB30/RLWROxl8r7D69uIVrM+c+YeYQ5U5TlueJR/8+vh
+WcCxVFo4Y6laFbk1JCmTvyx4Ef3ygfEDePO1bxAJ/U24BEWJgo5AwFRpeu1e085g
+o2p3g+9XkpK8X0a+Fa4IljrG91CRahMkWWcYF94vUQKBgQDUP8zqz+cqjcHggIKn
+kFmWdl13n0IYVKRfQtMBvwBXF+c0bvRezNm8Q11fpHEj9y3ETt2ka+egZdxkU7He
+pOO6zwAmuCi5mD4U8uMpInTVCCp6DUGBadwCa3/MGScfRS10ju1EUzdZlqOiMtew
+G5y9ebPD1EaKh9KNpsoyxb4zsQKBgQDRZeJCeSUivdpKkhPre8tsQghstqSvcWji
+LQt0eyeOYOtuoS+YgTHAgb9XyqEgiRJq0jyGRNekYdMWNLgfLQUnkOinHJcynkYb
+wE9716lC+bYmuezeLWKid/K6diQ+YfoYhUXE6UZ2Bu+E79DG/qLyaLbX1yn8nkLH
+R1y7IFSHSwKBgENKvwMrSxUYwIEW/VV21JB5koScf24LV9nD6/Y/wjHaqDjdfKiZ
+teaUTQRHtH88nMwCXQ8GDvexk8BTMK9wA6t0eY3NEUxWUkh+ATtHa1cnMaBkl4Ia
+N+CkiG4DA35Mhm7P6bWh1IiY0+RWzj9NYdJIxY+uu3asPTsfyDd0rirhAoGBAM3Z
+9gtZIvu7XhyO7IxEH9/mLngJOW7L88rdc3RoGaPrfac9SBgJcgqIwr0gkzPz7Koc
+0alBhiiwjp4254amcHnMCBs4jR8S32MqtDjP8zLHX51EjCqCvYNwnatWtxyonv96
+DPOeTEl9Wfv68eierTvXW2Bmwnz4bDeR3QSMrOxvAoGBAI/ip3TLHYAcLB61PWfx
+vQq8WkdBBw5vEkJOdp6iDbyRVOenOn0ubcbL5sHFLF7fxg6qgi2TGjU6UNmjv2Rc
+aN3C8elQA/Auen0DfbFLxWN+lUYZksP98Nt3ZlxyyWTKUGB52VDPQ5Zt72qaLHHK
+rGy3t/FFqkL2JHdXOk5Q9San
+-----END PRIVATE KEY-----`;
 
 function loadCertificate() {
-  const cert = localStorage.getItem('qz-certificate');
-  if (cert) {
-    qz.security.setCertificatePromise((resolve) => {
-      resolve(cert);
-    });
-  } else {
-    console.warn('QZ: No certificate found in localStorage');
-  }
+  qz.security.setCertificatePromise((resolve) => {
+    resolve(EMBEDDED_CERT);
+  });
 
   qz.security.setSignatureAlgorithm('SHA512');
 
-  const privateKey = localStorage.getItem('qz-private-key');
-  if (privateKey) {
-    console.log('QZ: Private key found, setting up signing...');
-    (qz.security as any).setSignaturePromise((toSign: string) => {
-      return (resolve: any, reject: any) => {
-        try {
-          const pk = privateKey;
-          const sig = new KJUR.crypto.Signature({ alg: 'SHA512withRSA' });
-          sig.init(pk);
-          sig.updateString(toSign);
-          const hex = sig.sign();
-          const b64 = hextob64(hex);
-          console.log('QZ: Signature generated successfully');
-          resolve(b64);
-        } catch (err) {
-          console.error('QZ: Signing failed:', err);
-          reject(err);
-        }
-      };
-    });
-  } else {
-    console.warn('QZ: No private key found, signature will be empty');
-    qz.security.setSignaturePromise(() => {
-      return (resolve: any) => {
-        resolve();
-      };
-    });
-  }
+  (qz.security as any).setSignaturePromise((toSign: string) => {
+    return (resolve: any, reject: any) => {
+      try {
+        const sig = new KJUR.crypto.Signature({ alg: 'SHA512withRSA' });
+        sig.init(EMBEDDED_KEY);
+        sig.updateString(toSign);
+        const hex = sig.sign();
+        const b64 = hextob64(hex);
+        resolve(b64);
+      } catch (err) {
+        console.error('QZ: Signing failed:', err);
+        reject(err);
+      }
+    };
+  });
 }
 
 export async function connectQZ(): Promise<boolean> {
