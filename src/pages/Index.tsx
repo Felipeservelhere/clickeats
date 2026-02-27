@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Order, OrderType } from '@/types/order';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Flame, MessageCircle, ClipboardList } from 'lucide-react';
-import { buildKitchenReceipt } from '@/lib/qz-print';
+import { buildKitchenReceipt, buildDeliveryReceipt } from '@/lib/qz-print';
 import { enqueuePrint } from '@/hooks/usePrintQueue';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -60,7 +60,7 @@ const Index = () => {
     }
   };
 
-  const handleDeliveryPrint = (order: Order) => {
+  const handleDeliveryPrint = async (order: Order) => {
     if (order.type === 'entrega' && (!order.address || !order.neighborhood || !order.customerName)) {
       toast.error('Preencha os dados de entrega antes de imprimir o resumo (nome, endereço, bairro)');
       setDetailOrder(order);
@@ -71,9 +71,15 @@ const Index = () => {
       setDetailOrder(order);
       return;
     }
-    setPrintOrder(order);
-    setPrintType('delivery');
-    setShowPrint(true);
+    try {
+      const data = buildDeliveryReceipt(order);
+      await enqueuePrint(data, 'delivery', order.id, user?.id, user?.display_name);
+      toast.success('Impressão do resumo enviada!');
+    } catch {
+      setPrintOrder(order);
+      setPrintType('delivery');
+      setShowPrint(true);
+    }
   };
 
   const handleOrderClick = (order: Order) => {
