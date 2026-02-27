@@ -19,8 +19,7 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
   const [selectedPrinter, setSelectedPrinter] = useState(getSavedPrinter() || '');
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [certText, setCertText] = useState(localStorage.getItem('qz-certificate') || '');
-  const [keyText, setKeyText] = useState(localStorage.getItem('qz-private-key') || '');
+  const [autoPrint, setAutoPrint] = useState(localStorage.getItem('qz-auto-print') === 'true');
   const [autoPrint, setAutoPrint] = useState(localStorage.getItem('qz-auto-print') === 'true');
   const [paperWidth, setPaperWidth] = useState<PaperWidth>(getSavedPaperWidth());
   const [printMode, setPrintMode] = useState<PrintMode>(getSavedPrintMode());
@@ -46,38 +45,6 @@ export function PrinterSettings({ open, onClose }: PrinterSettingsProps) {
       savePrinter(selectedPrinter);
       toast.success(`Impressora salva: ${selectedPrinter}`);
     }
-  };
-
-  const handleCertUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      if (text?.trim()) {
-        setCertificate(text.trim());
-        setCertText(text.trim());
-        toast.success('Certificado carregado com sucesso!');
-        loadPrinters();
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleKeyUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      if (text?.trim()) {
-        setPrivateKey(text.trim());
-        setKeyText(text.trim());
-        toast.success('Chave privada carregada! Reconectando...');
-        loadPrinters();
-      }
-    };
-    reader.readAsText(file);
   };
 
   const handleAutoChange = (val: boolean) => {
