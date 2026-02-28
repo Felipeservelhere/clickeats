@@ -43,15 +43,6 @@ export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, 
         {order.customerName && (
           <p className="font-semibold truncate flex-1">{order.customerName}</p>
         )}
-        {!isCompleted && onInfoClick && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onInfoClick(); }}
-            className="shrink-0 p-1 rounded-full hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-primary"
-            title="Editar dados do pedido"
-          >
-            <Info className="h-4 w-4" />
-          </button>
-        )}
       </div>
       {order.type === 'mesa' && order.tableNumber && (
         <p className="text-sm text-muted-foreground">Mesa {order.tableNumber}</p>
@@ -65,6 +56,11 @@ export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, 
       {/* Actions */}
       {!isCompleted && (
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+          {onInfoClick && (
+            <Button variant="outline" size="sm" className="gap-1.5 h-9 w-9 shrink-0 p-0" onClick={(e) => { e.stopPropagation(); onInfoClick(); }} title="Editar dados do pedido">
+              <Info className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="flex-1 gap-1.5 h-9 text-xs" onClick={(e) => { e.stopPropagation(); onKitchenPrint(); }}>
             <ChefHat className="h-3.5 w-3.5" /> Cozinha
           </Button>
