@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Product, CartItem, Addon } from '@/types/order';
 import { Minus, Plus } from 'lucide-react';
 
@@ -18,11 +19,13 @@ export function AddonsModal({ product, existingItem, open, onClose, onConfirm }:
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>(existingItem?.selectedAddons || []);
   const [quantity, setQuantity] = useState(existingItem?.quantity || 1);
   const [observation, setObservation] = useState(existingItem?.observation || '');
+  const [customPrice, setCustomPrice] = useState<string>('');
 
   const resetAndClose = () => {
     setSelectedAddons([]);
     setQuantity(1);
     setObservation('');
+    setCustomPrice('');
     onClose();
   };
 
@@ -36,12 +39,14 @@ export function AddonsModal({ product, existingItem, open, onClose, onConfirm }:
     );
   };
 
-  const itemTotal = (product.price + selectedAddons.reduce((s, a) => s + a.price, 0)) * quantity;
+  const effectivePrice = customPrice !== '' ? (parseFloat(customPrice) || 0) : product.price;
+  const itemTotal = (effectivePrice + selectedAddons.reduce((s, a) => s + a.price, 0)) * quantity;
 
   const handleConfirm = () => {
+    const finalProduct = customPrice !== '' ? { ...product, price: effectivePrice } : product;
     onConfirm({
       cartId: existingItem?.cartId || crypto.randomUUID(),
-      product,
+      product: finalProduct,
       selectedAddons,
       quantity,
       observation: observation.trim() || undefined,
@@ -54,9 +59,16 @@ export function AddonsModal({ product, existingItem, open, onClose, onConfirm }:
       <DialogContent className="bg-card border-border max-w-md max-h-[85vh] flex flex-col p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle className="font-heading text-xl">{product.name}</DialogTitle>
-          <p className="text-primary font-semibold text-lg">
-            R$ {product.price.toFixed(2)}
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">R$</span>
+            <Input
+              type="number"
+              step="0.01"
+              value={customPrice !== '' ? customPrice : product.price.toFixed(2)}
+              onChange={e => setCustomPrice(e.target.value)}
+              className="w-28 h-8 text-primary font-semibold text-lg bg-secondary/50 border-border"
+            />
+          </div>
         </DialogHeader>
 
         {/* Scrollable content */}

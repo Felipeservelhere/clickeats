@@ -53,6 +53,8 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   const [editAddressNumber, setEditAddressNumber] = useState('');
   const [editReference, setEditReference] = useState('');
   const [editNeighborhoodId, setEditNeighborhoodId] = useState('');
+  const [editCustomNeighborhoodName, setEditCustomNeighborhoodName] = useState('');
+  const [editCustomNeighborhoodFee, setEditCustomNeighborhoodFee] = useState('');
   const [editPayment, setEditPayment] = useState<PaymentMethod | undefined>(undefined);
   const [editChangeFor, setEditChangeFor] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -117,6 +119,8 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
     setEditAddressNumber(currentOrder.addressNumber || '');
     setEditReference(currentOrder.reference || '');
     setEditNeighborhoodId(currentOrder.neighborhood?.id || '');
+    setEditCustomNeighborhoodName('');
+    setEditCustomNeighborhoodFee('');
     setEditPayment(currentOrder.paymentMethod || undefined);
     setEditChangeFor(currentOrder.changeFor ? String(currentOrder.changeFor) : '');
     setSelectedCustomer(null);
@@ -150,10 +154,15 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   };
 
   const handleSaveInfo = () => {
-    const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
-    const neighborhoodObj: Neighborhood | undefined = neighborhood
-      ? { id: neighborhood.id, name: neighborhood.name, fee: Number(neighborhood.fee) }
-      : currentOrder.neighborhood;
+    let neighborhoodObj: Neighborhood | undefined;
+    if (editNeighborhoodId === '__custom__') {
+      neighborhoodObj = { id: '', name: editCustomNeighborhoodName.trim() || 'Personalizado', fee: parseFloat(editCustomNeighborhoodFee) || 0 };
+    } else {
+      const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
+      neighborhoodObj = neighborhood
+        ? { id: neighborhood.id, name: neighborhood.name, fee: Number(neighborhood.fee) }
+        : currentOrder.neighborhood;
+    }
 
     const newDeliveryFee = currentOrder.type === 'entrega' && neighborhoodObj ? neighborhoodObj.fee : currentOrder.deliveryFee;
     const newTotal = currentOrder.subtotal + newDeliveryFee;
@@ -175,6 +184,10 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   };
 
   const editTotal = (() => {
+    if (editNeighborhoodId === '__custom__') {
+      const fee = parseFloat(editCustomNeighborhoodFee) || 0;
+      return currentOrder.subtotal + fee;
+    }
     const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
     const fee = currentOrder.type === 'entrega' && neighborhood ? Number(neighborhood.fee) : currentOrder.deliveryFee;
     return currentOrder.subtotal + fee;
@@ -351,7 +364,13 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
                   <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" /> Bairro
                   </label>
-                  <Select value={editNeighborhoodId} onValueChange={setEditNeighborhoodId}>
+                  <Select value={editNeighborhoodId} onValueChange={(v) => {
+                    setEditNeighborhoodId(v);
+                    if (v !== '__custom__') {
+                      setEditCustomNeighborhoodName('');
+                      setEditCustomNeighborhoodFee('');
+                    }
+                  }}>
                     <SelectTrigger className="bg-secondary/50">
                       <SelectValue placeholder="Selecione o bairro" />
                     </SelectTrigger>
@@ -361,8 +380,15 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
                           {n.name} - R$ {Number(n.fee).toFixed(2)}
                         </SelectItem>
                       ))}
+                      <SelectItem value="__custom__">Personalizado...</SelectItem>
                     </SelectContent>
                   </Select>
+                  {editNeighborhoodId === '__custom__' && (
+                    <div className="grid grid-cols-2 gap-2 animate-fade-in">
+                      <Input placeholder="Nome (opcional)" value={editCustomNeighborhoodName} onChange={e => setEditCustomNeighborhoodName(e.target.value)} className="bg-secondary/50" />
+                      <Input placeholder="Taxa (R$)" type="number" step="0.01" value={editCustomNeighborhoodFee} onChange={e => setEditCustomNeighborhoodFee(e.target.value)} className="bg-secondary/50" />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-muted-foreground">Endereço</label>

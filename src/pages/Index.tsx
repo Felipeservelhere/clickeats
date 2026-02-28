@@ -133,8 +133,9 @@ const Index = () => {
     }
   };
 
-  // Handle info icon click - open detail for editing, with special finalization flow
+  // Handle info icon click - open detail sheet directly for editing
   const handleInfoClick = (order: Order) => {
+    // Open the same detail sheet as clicking the order, but set infoDetailOrder for special flow
     setInfoDetailOrder(order);
   };
 
@@ -149,12 +150,6 @@ const Index = () => {
       } catch {
         // silent fail on print
       }
-    }
-    // Complete the order
-    if ((order.type === 'entrega' || order.type === 'retirada') && order.customerPhone) {
-      setCompleteOrder(order);
-    } else {
-      updateOrder(order.id, { status: 'completed' });
     }
     setInfoDetailOrder(null);
   };
@@ -414,14 +409,14 @@ const Index = () => {
         onComplete={handleComplete}
       />
 
-      {/* Info Detail (special flow - only summary print) */}
+      {/* Info Detail (special flow - only summary print on save) */}
       <OrderDetailSheet
         order={infoDetailOrder}
         open={!!infoDetailOrder}
         onClose={() => setInfoDetailOrder(null)}
-        onKitchenPrint={() => {}} 
+        onKitchenPrint={() => {}}
         onDeliveryPrint={(o) => handleDeliveryPrint(o, false)}
-        onComplete={handleInfoComplete}
+        onComplete={(o) => handleInfoComplete(o)}
       />
 
       {/* Notify Modal */}

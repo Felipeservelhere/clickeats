@@ -215,12 +215,12 @@ function getReceiptStyle(): string {
   .sem { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${width < 250 ? '18px' : '28px'}; color: #000; }
   .linha { border-top: 2px solid #000; margin: 4px 0; }
   .linha-tracejada { border-top: 2px dashed #000; margin: 4px 0; }
-  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin: 2px 0; padding: 0 ${isZkt ? '16px' : '0'}; }
-  .total-row.grande { font-size: ${width < 250 ? '18px' : '22px'}; }
-  .total-row span:last-child { text-align: right; min-width: 0; }
+  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; margin: 2px 0; padding: 0 ${isZkt ? '16px' : '2px'}; }
+  .total-row.grande { font-size: ${width < 250 ? '14px' : '16px'}; }
+  .total-row span:last-child { text-align: right; min-width: 0; flex-shrink: 0; }
   .total { font-weight: 900; font-size: ${width < 250 ? '18px' : '22px'}; text-align: center; margin-top: 4px; }
   .subtotal { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; text-align: center; }
-  .pgto { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${isZkt ? '16px' : '2px'}; margin: 2px 0; overflow-wrap: break-word; }
+  .pgto { font-size: ${width < 250 ? '11px' : '13px'}; font-weight: 900; padding-left: ${isZkt ? '16px' : '2px'}; margin: 2px 0; overflow-wrap: break-word; word-break: break-word; }
   @media print {
     @page { margin: 0; size: ${getSavedPaperWidth() === '58mm' ? '58mm' : '80mm'} auto; }
     body { width: 100%; max-width: 100%; }
@@ -344,6 +344,7 @@ export function buildKitchenReceipt(order: {
 function groupItemsByCategory(items: ReceiptItem[]) {
   const catMap = new Map<string, ReceiptItem[]>();
   const catNames = new Map<string, string>();
+  const catTypes = new Map<string, string>();
   for (const item of items) {
     const catId = item.product.categoryId || 'outros';
     if (!catMap.has(catId)) catMap.set(catId, []);
@@ -351,12 +352,21 @@ function groupItemsByCategory(items: ReceiptItem[]) {
     if (item.product.categoryName && !catNames.has(catId)) {
       catNames.set(catId, item.product.categoryName.toUpperCase());
     }
+    if ((item.product as any).categoryType && !catTypes.has(catId)) {
+      catTypes.set(catId, (item.product as any).categoryType);
+    }
   }
   const groups: Array<{ categoryName: string; items: ReceiptItem[] }> = [];
+  const drinkGroups: Array<{ categoryName: string; items: ReceiptItem[] }> = [];
   for (const [catId, catItems] of catMap) {
-    groups.push({ categoryName: catNames.get(catId) || 'OUTROS', items: catItems });
+    const group = { categoryName: catNames.get(catId) || 'OUTROS', items: catItems };
+    if (catTypes.get(catId) === 'bebida') {
+      drinkGroups.push(group);
+    } else {
+      groups.push(group);
+    }
   }
-  return groups;
+  return [...groups, ...drinkGroups];
 }
 
 export function buildDeliveryReceipt(order: {

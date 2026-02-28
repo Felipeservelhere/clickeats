@@ -42,6 +42,7 @@ const NewOrder = () => {
       price: Number(p.price),
       categoryId: p.category_id,
       categoryName: cat?.name,
+      categoryType: cat?.type,
       addons: (p.addons || []).map((a): Addon => ({ id: a.id, name: a.name, price: Number(a.price) })),
     };
   });
@@ -123,6 +124,9 @@ const NewOrder = () => {
   };
   const handleEditItem = (item: CartItem) => { setEditingItem(item); setAddonsProduct(item.product); };
   const handleRemoveItem = (cartId: string) => setCart(prev => prev.filter(i => i.cartId !== cartId));
+  const handleUpdateQuantity = (cartId: string, delta: number) => {
+    setCart(prev => prev.map(i => i.cartId === cartId ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i));
+  };
 
   const { user } = useAuth();
 
@@ -258,7 +262,7 @@ const NewOrder = () => {
         productIngredients={pizzaIngredients}
         onConfirm={(item) => { setCart(prev => [...prev, item]); setPizzaBuilderProduct(null); }}
       />
-      <CartBar items={cart} onEditItem={handleEditItem} onRemoveItem={handleRemoveItem} onCheckout={() => setShowCheckout(true)} />
+      <CartBar items={cart} onEditItem={handleEditItem} onRemoveItem={handleRemoveItem} onUpdateQuantity={handleUpdateQuantity} onCheckout={() => setShowCheckout(true)} />
       <CheckoutSheet open={showCheckout} onClose={() => setShowCheckout(false)} items={cart} onFinalize={handleFinalize} forcedTableNumber={forcedTableNumber} />
     </div>
   );
