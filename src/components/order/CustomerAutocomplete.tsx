@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { useCustomerSearch, Customer } from '@/hooks/useCustomers';
-import { User, Plus } from 'lucide-react';
+import { User } from 'lucide-react';
 
 interface CustomerAutocompleteProps {
   value: string;
