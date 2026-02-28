@@ -360,7 +360,13 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
                   <label className="text-sm font-semibold text-muted-foreground flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" /> Bairro
                   </label>
-                  <Select value={editNeighborhoodId} onValueChange={setEditNeighborhoodId}>
+                  <Select value={editNeighborhoodId} onValueChange={(v) => {
+                    setEditNeighborhoodId(v);
+                    if (v !== '__custom__') {
+                      setEditCustomNeighborhoodName('');
+                      setEditCustomNeighborhoodFee('');
+                    }
+                  }}>
                     <SelectTrigger className="bg-secondary/50">
                       <SelectValue placeholder="Selecione o bairro" />
                     </SelectTrigger>
@@ -370,8 +376,15 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
                           {n.name} - R$ {Number(n.fee).toFixed(2)}
                         </SelectItem>
                       ))}
+                      <SelectItem value="__custom__">Personalizado...</SelectItem>
                     </SelectContent>
                   </Select>
+                  {editNeighborhoodId === '__custom__' && (
+                    <div className="grid grid-cols-2 gap-2 animate-fade-in">
+                      <Input placeholder="Nome (opcional)" value={editCustomNeighborhoodName} onChange={e => setEditCustomNeighborhoodName(e.target.value)} className="bg-secondary/50" />
+                      <Input placeholder="Taxa (R$)" type="number" step="0.01" value={editCustomNeighborhoodFee} onChange={e => setEditCustomNeighborhoodFee(e.target.value)} className="bg-secondary/50" />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-muted-foreground">Endereço</label>
