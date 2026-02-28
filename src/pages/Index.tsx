@@ -409,14 +409,14 @@ const Index = () => {
         onComplete={handleComplete}
       />
 
-      {/* Info Detail (special flow - only summary print) */}
+      {/* Info Detail (special flow - only summary print on save) */}
       <OrderDetailSheet
         order={infoDetailOrder}
         open={!!infoDetailOrder}
         onClose={() => setInfoDetailOrder(null)}
-        onKitchenPrint={() => {}} 
+        onKitchenPrint={() => {}}
         onDeliveryPrint={(o) => handleDeliveryPrint(o, false)}
-        onComplete={handleInfoComplete}
+        onComplete={(o) => handleInfoComplete(o)}
       />
 
       {/* Notify Modal */}
