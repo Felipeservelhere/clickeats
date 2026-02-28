@@ -261,6 +261,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
     setCustomerName(''); setCustomerPhone(''); setAddress(''); setAddressNumber('');
     setReference(''); setSelectedNeighborhood(null); setSelectedNeighborhoodId(''); setMesaReference(''); setObservation('');
     setPaymentMethod(undefined); setChangeFor(''); setSelectedCustomer(null); setSelectedTableNum(null); setSelectedAddressId(null);
+    setCustomNeighborhoodName(''); setCustomNeighborhoodFee('');
   };
 
   const showTypeSelector = !isMesaMode;
@@ -377,9 +378,16 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
                 <Select
                   value={selectedNeighborhoodId}
                   onValueChange={v => {
-                    const n = neighborhoods.find(n => n.id === v);
-                    setSelectedNeighborhood(n ? { id: n.id, name: n.name, fee: Number(n.fee) } : null);
-                    setSelectedNeighborhoodId(v);
+                    if (v === '__custom__') {
+                      setSelectedNeighborhoodId('__custom__');
+                      setSelectedNeighborhood(null);
+                    } else {
+                      const n = neighborhoods.find(n => n.id === v);
+                      setSelectedNeighborhood(n ? { id: n.id, name: n.name, fee: Number(n.fee) } : null);
+                      setSelectedNeighborhoodId(v);
+                      setCustomNeighborhoodName('');
+                      setCustomNeighborhoodFee('');
+                    }
                   }}
                 >
                   <SelectTrigger className="bg-secondary/50">
@@ -391,8 +399,21 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
                         {n.name} - R$ {Number(n.fee).toFixed(2)}
                       </SelectItem>
                     ))}
+                    <SelectItem value="__custom__">Personalizado...</SelectItem>
                   </SelectContent>
                 </Select>
+                {selectedNeighborhoodId === '__custom__' && (
+                  <div className="grid grid-cols-2 gap-2 animate-fade-in">
+                    <Input placeholder="Nome do bairro (opcional)" value={customNeighborhoodName} onChange={e => {
+                      setCustomNeighborhoodName(e.target.value);
+                      setSelectedNeighborhood({ id: '', name: e.target.value.trim() || 'Personalizado', fee: parseFloat(customNeighborhoodFee) || 0 });
+                    }} className="bg-secondary/50" />
+                    <Input placeholder="Taxa (R$)" type="number" step="0.01" value={customNeighborhoodFee} onChange={e => {
+                      setCustomNeighborhoodFee(e.target.value);
+                      setSelectedNeighborhood({ id: '', name: customNeighborhoodName.trim() || 'Personalizado', fee: parseFloat(e.target.value) || 0 });
+                    }} className="bg-secondary/50" />
+                  </div>
+                )}
                 <Input placeholder="Rua / Endereço" value={address} onChange={e => setAddress(e.target.value)} onBlur={handleCheckNewAddress} className="bg-secondary/50" />
                 <div className="grid grid-cols-2 gap-2">
                   <Input placeholder="Número" value={addressNumber} onChange={e => setAddressNumber(e.target.value)} className="bg-secondary/50" />

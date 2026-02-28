@@ -52,6 +52,7 @@ const CardapioPage = () => {
   const [catName, setCatName] = useState('');
   const [catIcon, setCatIcon] = useState('utensils-crossed');
   const [catIsPizza, setCatIsPizza] = useState(false);
+  const [catIsBebida, setCatIsBebida] = useState(false);
 
   // Product create form
   const [prodModal, setProdModal] = useState(false);
@@ -95,12 +96,12 @@ const CardapioPage = () => {
   );
 
   // Category handlers
-  const openNewCat = () => { setEditCat(null); setCatName(''); setCatIcon('utensils-crossed'); setCatIsPizza(false); setCatModal(true); };
-  const openEditCat = (c: typeof categories[0]) => { setEditCat({ id: c.id, name: c.name, icon: c.icon, type: c.type }); setCatName(c.name); setCatIcon(c.icon); setCatIsPizza(c.type === 'pizza'); setCatModal(true); };
+  const openNewCat = () => { setEditCat(null); setCatName(''); setCatIcon('utensils-crossed'); setCatIsPizza(false); setCatIsBebida(false); setCatModal(true); };
+  const openEditCat = (c: typeof categories[0]) => { setEditCat({ id: c.id, name: c.name, icon: c.icon, type: c.type }); setCatName(c.name); setCatIcon(c.icon); setCatIsPizza(c.type === 'pizza'); setCatIsBebida(c.type === 'bebida'); setCatModal(true); };
   const saveCat = async () => {
     if (!catName.trim()) return;
     try {
-      const type = catIsPizza ? 'pizza' : 'normal';
+      const type = catIsPizza ? 'pizza' : catIsBebida ? 'bebida' : 'normal';
       if (editCat) {
         await updateCategory.mutateAsync({ id: editCat.id, name: catName.trim(), icon: catIcon, type });
         toast.success('Categoria atualizada');
@@ -422,7 +423,14 @@ const CardapioPage = () => {
                 <p className="font-semibold text-sm flex items-center gap-2"><Pizza className="h-4 w-4" /> Categoria de Pizza</p>
                 <p className="text-xs text-muted-foreground">Ativa tamanhos, sabores e bordas</p>
               </div>
-              <Switch checked={catIsPizza} onCheckedChange={setCatIsPizza} />
+              <Switch checked={catIsPizza} onCheckedChange={(v) => { setCatIsPizza(v); if (v) setCatIsBebida(false); }} />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border">
+              <div>
+                <p className="font-semibold text-sm flex items-center gap-2">🥤 Categoria de Bebidas</p>
+                <p className="text-xs text-muted-foreground">Imprime por último nos recibos</p>
+              </div>
+              <Switch checked={catIsBebida} onCheckedChange={(v) => { setCatIsBebida(v); if (v) setCatIsPizza(false); }} />
             </div>
             <Button onClick={saveCat} className="w-full" disabled={createCategory.isPending || updateCategory.isPending}>
               {editCat ? 'Salvar' : 'Criar'}

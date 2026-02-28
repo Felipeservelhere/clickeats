@@ -42,6 +42,7 @@ const NewOrder = () => {
       price: Number(p.price),
       categoryId: p.category_id,
       categoryName: cat?.name,
+      categoryType: cat?.type,
       addons: (p.addons || []).map((a): Addon => ({ id: a.id, name: a.name, price: Number(a.price) })),
     };
   });
