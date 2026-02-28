@@ -66,6 +66,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const [reference, setReference] = useState('');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<Neighborhood | null>(null);
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState<string>('');
+  const [customNeighborhoodName, setCustomNeighborhoodName] = useState('');
+  const [customNeighborhoodFee, setCustomNeighborhoodFee] = useState('');
   const [mesaReference, setMesaReference] = useState('');
   const [observation, setObservation] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
