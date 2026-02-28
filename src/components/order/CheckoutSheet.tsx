@@ -68,7 +68,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState<string>('');
   const [mesaReference, setMesaReference] = useState('');
   const [observation, setObservation] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('dinheiro');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
   const [changeFor, setChangeFor] = useState('');
 
   // Address selection
@@ -180,6 +180,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const total = subtotal + deliveryFee;
 
   const changeAmount = paymentMethod === 'dinheiro' && changeFor ? parseFloat(changeFor) - total : 0;
+  const paymentMethodOrUndefined = paymentMethod;
 
   const isOpenOrder = orderType === 'mesa' && !isMesaMode && !selectedTableNum && !mesaReference.trim();
 
@@ -248,8 +249,8 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
       subtotal,
       deliveryFee,
       total,
-      paymentMethod,
-      changeFor: paymentMethod === 'dinheiro' && changeFor ? parseFloat(changeFor) : undefined,
+      paymentMethod: paymentMethodOrUndefined,
+      changeFor: paymentMethodOrUndefined === 'dinheiro' && changeFor ? parseFloat(changeFor) : undefined,
       createdAt: new Date().toISOString(),
     };
     onFinalize(order);
@@ -259,7 +260,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
   const resetForm = () => {
     setCustomerName(''); setCustomerPhone(''); setAddress(''); setAddressNumber('');
     setReference(''); setSelectedNeighborhood(null); setSelectedNeighborhoodId(''); setMesaReference(''); setObservation('');
-    setPaymentMethod('dinheiro'); setChangeFor(''); setSelectedCustomer(null); setSelectedTableNum(null); setSelectedAddressId(null);
+    setPaymentMethod(undefined); setChangeFor(''); setSelectedCustomer(null); setSelectedTableNum(null); setSelectedAddressId(null);
   };
 
   const showTypeSelector = !isMesaMode;

@@ -205,6 +205,7 @@ function getReceiptStyle(): string {
   .tipo { font-size: ${width < 250 ? '16px' : '20px'}; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
   .data { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: bold; margin-bottom: 2px; text-align: center; }
   .info { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; margin-bottom: 2px; text-align: left; padding-left: ${isZkt ? '16px' : '2px'}; overflow-wrap: break-word; }
+  .info-center { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; margin-bottom: 2px; text-align: center; overflow-wrap: break-word; }
   .info-label { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin-bottom: 2px; text-align: left; }
   .grupo { background: #000; color: #fff; padding: 3px 6px; margin: 4px ${isZkt ? '-14px' : '0'} 3px; font-weight: 900; font-size: ${width < 250 ? '13px' : '16px'}; text-align: center; }
   .item { margin: 2px 0; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; padding-left: ${isZkt ? '16px' : '2px'}; overflow-wrap: break-word; word-break: break-word; }
@@ -214,8 +215,9 @@ function getReceiptStyle(): string {
   .sem { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${width < 250 ? '18px' : '28px'}; color: #000; }
   .linha { border-top: 2px solid #000; margin: 4px 0; }
   .linha-tracejada { border-top: 2px dashed #000; margin: 4px 0; }
-  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin: 2px 0; padding: 0 ${isZkt ? '16px' : '2px'}; }
+  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '13px' : '16px'}; font-weight: 900; margin: 2px 0; padding: 0 ${isZkt ? '16px' : '0'}; }
   .total-row.grande { font-size: ${width < 250 ? '18px' : '22px'}; }
+  .total-row span:last-child { text-align: right; min-width: 0; }
   .total { font-weight: 900; font-size: ${width < 250 ? '18px' : '22px'}; text-align: center; margin-top: 4px; }
   .subtotal { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; text-align: center; }
   .pgto { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${isZkt ? '16px' : '2px'}; margin: 2px 0; overflow-wrap: break-word; }
@@ -310,7 +312,7 @@ export function buildKitchenReceipt(order: {
   html += `<div class="data">${date} ${time}</div>`;
 
   if (order.customerName) {
-    html += `<div class="info">Cliente: ${escapeHtml(order.customerName)}</div>`;
+    html += `<div class="info-center">${escapeHtml(order.customerName)}</div>`;
   }
 
   html += `<div class="linha"></div>`;
@@ -389,7 +391,7 @@ export function buildDeliveryReceipt(order: {
   html += `<div class="data">${date} ${time}</div>`;
 
   if (order.customerName) {
-    html += `<div class="info">${escapeHtml(order.customerName)}</div>`;
+    html += `<div class="info-center">${escapeHtml(order.customerName)}</div>`;
   }
   if (order.type === 'entrega') {
     if (order.address) {
@@ -464,7 +466,7 @@ export function buildDeliveryReceipt(order: {
   return html;
 }
 
-/** Check if an order has all delivery/pickup details filled */
+/** Check if an order has all delivery/pickup details filled (phone is optional) */
 export function isDeliveryDetailsFilled(order: {
   type: string;
   customerName?: string;
@@ -474,7 +476,7 @@ export function isDeliveryDetailsFilled(order: {
   paymentMethod?: string;
 }): boolean {
   if (order.type === 'entrega') {
-    return !!(order.customerName && order.customerPhone && order.address && order.neighborhood?.name && order.paymentMethod);
+    return !!(order.customerName && order.address && order.neighborhood?.name && order.paymentMethod);
   }
   if (order.type === 'retirada') {
     return !!(order.customerName && order.paymentMethod);
