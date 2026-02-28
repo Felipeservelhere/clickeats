@@ -268,9 +268,28 @@ const Index = () => {
     <div className="bg-background p-4">
       <div className="flex items-center justify-between max-w-6xl mx-auto mb-6">
         <h1 className="font-heading font-bold text-2xl">Pedidos</h1>
-        <Button onClick={() => navigate('/novo-pedido')} className="gap-2 font-semibold">
-          <Plus className="h-4 w-4" /> Novo Pedido
-        </Button>
+        <div className="flex items-center gap-3">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2 font-semibold">
+                <CalendarIcon className="h-4 w-4" />
+                {format(selectedDate, "dd/MM/yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(d) => d && setSelectedDate(d)}
+                locale={pt}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          <Button onClick={() => navigate('/novo-pedido')} className="gap-2 font-semibold">
+            <Plus className="h-4 w-4" /> Novo Pedido
+          </Button>
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto">
@@ -344,6 +363,7 @@ const Index = () => {
                 key={order.id}
                 order={order}
                 onClick={() => handleOrderClick(order)}
+                onInfoClick={() => handleInfoClick(order)}
                 onKitchenPrint={() => handleKitchenPrint(order)}
                 onDeliveryPrint={() => handleDeliveryPrint(order)}
                 onComplete={() => handleComplete(order)}
