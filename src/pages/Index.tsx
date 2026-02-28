@@ -9,13 +9,18 @@ import { OrderDetailSheet } from '@/components/order/OrderDetailSheet';
 import { OpenOrderDetailSheet } from '@/components/order/OpenOrderDetailSheet';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Order, OrderType } from '@/types/order';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Flame, MessageCircle, ClipboardList } from 'lucide-react';
-import { buildKitchenReceipt, buildDeliveryReceipt } from '@/lib/qz-print';
+import { Plus, Flame, MessageCircle, ClipboardList, CalendarIcon, Info } from 'lucide-react';
+import { buildKitchenReceipt, buildDeliveryReceipt, isDeliveryDetailsFilled } from '@/lib/qz-print';
 import { enqueuePrint } from '@/hooks/usePrintQueue';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const typeFilters: { value: OrderType | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -23,6 +28,25 @@ const typeFilters: { value: OrderType | 'all'; label: string }[] = [
   { value: 'entrega', label: 'Entrega' },
   { value: 'retirada', label: 'Retirada' },
 ];
+
+/** Get the "business date" for a given timestamp. Day changes at 6am. */
+function getBusinessDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  // If before 6am, belongs to previous day
+  if (d.getHours() < 6) {
+    d.setDate(d.getDate() - 1);
+  }
+  return format(d, 'yyyy-MM-dd');
+}
+
+function getTodayBusinessDate(): Date {
+  const now = new Date();
+  if (now.getHours() < 6) {
+    now.setDate(now.getDate() - 1);
+  }
+  now.setHours(0, 0, 0, 0);
+  return now;
+}
 
 const Index = () => {
   const navigate = useNavigate();
@@ -34,6 +58,7 @@ const Index = () => {
   const activeTables = dbTables.filter(t => t.active).map(t => t.number);
 
   const [filter, setFilter] = useState<OrderType | 'all'>('all');
+  const [selectedDate, setSelectedDate] = useState<Date>(getTodayBusinessDate());
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
   const [printType, setPrintType] = useState<'kitchen' | 'delivery'>('kitchen');
   const [showPrint, setShowPrint] = useState(false);
@@ -41,12 +66,18 @@ const Index = () => {
   const [tableDetailOrder, setTableDetailOrder] = useState<Order | null>(null);
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [openOrderDetail, setOpenOrderDetail] = useState<Order | null>(null);
-  const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.type === filter);
+  const [infoDetailOrder, setInfoDetailOrder] = useState<Order | null>(null);
+
+  // Filter orders by business date
+  const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+  const dateFilteredOrders = orders.filter(o => getBusinessDate(o.createdAt) === selectedDateStr);
+
+  const filteredOrders = filter === 'all' ? dateFilteredOrders : dateFilteredOrders.filter(o => o.type === filter);
   const activeOrders = filteredOrders.filter(o => o.status !== 'completed');
   const completedOrders = filteredOrders.filter(o => o.status === 'completed');
 
-  // Open orders = mesa type with no table assigned
-  const openOrders = orders.filter(o => o.type === 'mesa' && o.status !== 'completed' && !o.tableNumber && !o.tableReference);
+  // Open orders = mesa type with no table assigned (also filtered by date)
+  const openOrders = dateFilteredOrders.filter(o => o.type === 'mesa' && o.status !== 'completed' && !o.tableNumber && !o.tableReference);
 
   const handleKitchenPrint = async (order: Order) => {
     try {
@@ -60,15 +91,14 @@ const Index = () => {
     }
   };
 
-  const handleDeliveryPrint = async (order: Order) => {
-    if (order.type === 'entrega' && (!order.address || !order.neighborhood || !order.customerName)) {
-      toast.error('Preencha os dados de entrega antes de imprimir o resumo (nome, endereço, bairro)');
-      setDetailOrder(order);
-      return;
-    }
-    if (!order.paymentMethod) {
-      toast.error('Defina a forma de pagamento antes de imprimir o resumo');
-      setDetailOrder(order);
+  const handleDeliveryPrint = async (order: Order, openDetailOnError = true) => {
+    if (!isDeliveryDetailsFilled(order)) {
+      if (order.type === 'entrega') {
+        toast.error('Preencha nome, endereço, bairro e pagamento antes de imprimir o resumo');
+      } else {
+        toast.error('Preencha nome e pagamento antes de imprimir o resumo');
+      }
+      if (openDetailOnError) setDetailOrder(order);
       return;
     }
     try {
@@ -101,6 +131,32 @@ const Index = () => {
     } else {
       updateOrder(order.id, { status: 'completed' });
     }
+  };
+
+  // Handle info icon click - open detail for editing, with special finalization flow
+  const handleInfoClick = (order: Order) => {
+    setInfoDetailOrder(order);
+  };
+
+  // Special complete from info modal: only print summary, not kitchen
+  const handleInfoComplete = async (order: Order) => {
+    // Try to print summary only (not kitchen)
+    if (isDeliveryDetailsFilled(order)) {
+      try {
+        const data = buildDeliveryReceipt(order);
+        await enqueuePrint(data, 'delivery', order.id, user?.id, user?.display_name);
+        toast.success('Resumo impresso!');
+      } catch {
+        // silent fail on print
+      }
+    }
+    // Complete the order
+    if ((order.type === 'entrega' || order.type === 'retirada') && order.customerPhone) {
+      setCompleteOrder(order);
+    } else {
+      updateOrder(order.id, { status: 'completed' });
+    }
+    setInfoDetailOrder(null);
   };
 
   const handleNotifyAndComplete = () => {

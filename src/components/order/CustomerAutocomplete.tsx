@@ -49,13 +49,7 @@ export function CustomerAutocomplete({ value, onChange, onSelectCustomer, onCrea
             <div className="px-4 py-3 text-sm text-muted-foreground">Buscando...</div>
           )}
           {!isLoading && results.length === 0 && (
-            <button
-              onClick={() => { onCreateNew(value); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-secondary/50 transition-colors text-left"
-            >
-              <Plus className="h-4 w-4 text-primary" />
-              <span>Cadastrar "<strong>{value}</strong>" como novo cliente</span>
-            </button>
+            <div className="px-4 py-3 text-sm text-muted-foreground">Nenhum cliente encontrado</div>
           )}
           {!isLoading && results.map(customer => (
             <button
@@ -74,15 +68,6 @@ export function CustomerAutocomplete({ value, onChange, onSelectCustomer, onCrea
               </div>
             </button>
           ))}
-          {!isLoading && results.length > 0 && (
-            <button
-              onClick={() => { onCreateNew(value); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-secondary/50 transition-colors text-left border-t border-border"
-            >
-              <Plus className="h-4 w-4 text-primary" />
-              <span>Cadastrar como novo cliente</span>
-            </button>
-          )}
         </div>
       )}
     </div>
