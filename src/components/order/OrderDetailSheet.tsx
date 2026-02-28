@@ -53,6 +53,8 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   const [editAddressNumber, setEditAddressNumber] = useState('');
   const [editReference, setEditReference] = useState('');
   const [editNeighborhoodId, setEditNeighborhoodId] = useState('');
+  const [editCustomNeighborhoodName, setEditCustomNeighborhoodName] = useState('');
+  const [editCustomNeighborhoodFee, setEditCustomNeighborhoodFee] = useState('');
   const [editPayment, setEditPayment] = useState<PaymentMethod | undefined>(undefined);
   const [editChangeFor, setEditChangeFor] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -117,6 +119,8 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
     setEditAddressNumber(currentOrder.addressNumber || '');
     setEditReference(currentOrder.reference || '');
     setEditNeighborhoodId(currentOrder.neighborhood?.id || '');
+    setEditCustomNeighborhoodName('');
+    setEditCustomNeighborhoodFee('');
     setEditPayment(currentOrder.paymentMethod || undefined);
     setEditChangeFor(currentOrder.changeFor ? String(currentOrder.changeFor) : '');
     setSelectedCustomer(null);
@@ -150,10 +154,15 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   };
 
   const handleSaveInfo = () => {
-    const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
-    const neighborhoodObj: Neighborhood | undefined = neighborhood
-      ? { id: neighborhood.id, name: neighborhood.name, fee: Number(neighborhood.fee) }
-      : currentOrder.neighborhood;
+    let neighborhoodObj: Neighborhood | undefined;
+    if (editNeighborhoodId === '__custom__') {
+      neighborhoodObj = { id: '', name: editCustomNeighborhoodName.trim() || 'Personalizado', fee: parseFloat(editCustomNeighborhoodFee) || 0 };
+    } else {
+      const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
+      neighborhoodObj = neighborhood
+        ? { id: neighborhood.id, name: neighborhood.name, fee: Number(neighborhood.fee) }
+        : currentOrder.neighborhood;
+    }
 
     const newDeliveryFee = currentOrder.type === 'entrega' && neighborhoodObj ? neighborhoodObj.fee : currentOrder.deliveryFee;
     const newTotal = currentOrder.subtotal + newDeliveryFee;
