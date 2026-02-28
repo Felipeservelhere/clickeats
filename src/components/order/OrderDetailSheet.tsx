@@ -53,7 +53,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   const [editAddressNumber, setEditAddressNumber] = useState('');
   const [editReference, setEditReference] = useState('');
   const [editNeighborhoodId, setEditNeighborhoodId] = useState('');
-  const [editPayment, setEditPayment] = useState<PaymentMethod>('dinheiro');
+  const [editPayment, setEditPayment] = useState<PaymentMethod | undefined>(undefined);
   const [editChangeFor, setEditChangeFor] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
     setEditAddressNumber(currentOrder.addressNumber || '');
     setEditReference(currentOrder.reference || '');
     setEditNeighborhoodId(currentOrder.neighborhood?.id || '');
-    setEditPayment(currentOrder.paymentMethod || 'dinheiro');
+    setEditPayment(currentOrder.paymentMethod || undefined);
     setEditChangeFor(currentOrder.changeFor ? String(currentOrder.changeFor) : '');
     setSelectedCustomer(null);
     setSelectedAddressId(null);
@@ -165,7 +165,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
       addressNumber: editAddressNumber.trim() || undefined,
       reference: editReference.trim() || undefined,
       neighborhood: neighborhoodObj,
-      paymentMethod: editPayment,
+      paymentMethod: editPayment || undefined,
       changeFor: editPayment === 'dinheiro' && editChangeFor ? parseFloat(editChangeFor) : undefined,
       deliveryFee: newDeliveryFee,
       total: newTotal,
