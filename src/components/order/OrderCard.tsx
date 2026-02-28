@@ -1,6 +1,6 @@
 import { Order } from '@/types/order';
 import { Button } from '@/components/ui/button';
-import { ChefHat, Printer, Check, Clock } from 'lucide-react';
+import { ChefHat, Printer, Check, Clock, Info } from 'lucide-react';
 
 interface OrderCardProps {
   order: Order;
@@ -8,6 +8,7 @@ interface OrderCardProps {
   onDeliveryPrint: () => void;
   onComplete: () => void;
   onClick?: () => void;
+  onInfoClick?: () => void;
 }
 
 const typeLabels = { mesa: 'MESA', entrega: 'ENTREGA', retirada: 'RETIRADA' };
@@ -16,7 +17,7 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, onClick }: OrderCardProps) {
+export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, onClick, onInfoClick }: OrderCardProps) {
   const totalItems = order.items.reduce((s, i) => s + i.quantity, 0);
   const isCompleted = order.status === 'completed';
 
@@ -38,9 +39,20 @@ export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, 
       </div>
 
       {/* Customer */}
-      {order.customerName && (
-        <p className="font-semibold truncate mb-1">{order.customerName}</p>
-      )}
+      <div className="flex items-center gap-1.5 min-w-0">
+        {order.customerName && (
+          <p className="font-semibold truncate flex-1">{order.customerName}</p>
+        )}
+        {!isCompleted && onInfoClick && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onInfoClick(); }}
+            className="shrink-0 p-1 rounded-full hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-primary"
+            title="Editar dados do pedido"
+          >
+            <Info className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       {order.type === 'mesa' && order.tableNumber && (
         <p className="text-sm text-muted-foreground">Mesa {order.tableNumber}</p>
       )}

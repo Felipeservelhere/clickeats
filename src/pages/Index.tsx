@@ -414,6 +414,16 @@ const Index = () => {
         onComplete={handleComplete}
       />
 
+      {/* Info Detail (special flow - only summary print) */}
+      <OrderDetailSheet
+        order={infoDetailOrder}
+        open={!!infoDetailOrder}
+        onClose={() => setInfoDetailOrder(null)}
+        onKitchenPrint={() => {}} 
+        onDeliveryPrint={(o) => handleDeliveryPrint(o, false)}
+        onComplete={handleInfoComplete}
+      />
+
       {/* Notify Modal */}
       <Dialog open={!!completeOrder} onOpenChange={(v) => !v && setCompleteOrder(null)}>
         <DialogContent className="bg-card border-border max-w-sm">
