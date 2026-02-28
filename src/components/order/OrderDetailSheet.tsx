@@ -184,6 +184,10 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   };
 
   const editTotal = (() => {
+    if (editNeighborhoodId === '__custom__') {
+      const fee = parseFloat(editCustomNeighborhoodFee) || 0;
+      return currentOrder.subtotal + fee;
+    }
     const neighborhood = neighborhoods.find(n => n.id === editNeighborhoodId);
     const fee = currentOrder.type === 'entrega' && neighborhood ? Number(neighborhood.fee) : currentOrder.deliveryFee;
     return currentOrder.subtotal + fee;
