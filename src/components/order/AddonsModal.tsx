@@ -19,13 +19,16 @@ export function AddonsModal({ product, existingItem, open, onClose, onConfirm }:
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>(existingItem?.selectedAddons || []);
   const [quantity, setQuantity] = useState(existingItem?.quantity || 1);
   const [observation, setObservation] = useState(existingItem?.observation || '');
-  const [customPrice, setCustomPrice] = useState<string>('');
+  // null = auto-calculate (base + addons), string = manual override (absolute price)
+  const [manualPrice, setManualPrice] = useState<string | null>(
+    existingItem?.customPrice !== undefined ? String(existingItem.customPrice) : null
+  );
 
   const resetAndClose = () => {
     setSelectedAddons([]);
     setQuantity(1);
     setObservation('');
-    setCustomPrice('');
+    setManualPrice(null);
     onClose();
   };
 
@@ -39,17 +42,27 @@ export function AddonsModal({ product, existingItem, open, onClose, onConfirm }:
     );
   };
 
-  const effectivePrice = customPrice !== '' ? (parseFloat(customPrice) || 0) : product.price;
-  const itemTotal = (effectivePrice + selectedAddons.reduce((s, a) => s + a.price, 0)) * quantity;
+  const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0);
+  const autoPrice = product.price + addonsTotal;
+  const unitPrice = manualPrice !== null ? (parseFloat(manualPrice) || 0) : autoPrice;
+  const itemTotal = unitPrice * quantity;
+
+  const handlePriceChange = (val: string) => {
+    if (val === '') {
+      setManualPrice(null); // Clear manual override, go back to auto
+    } else {
+      setManualPrice(val);
+    }
+  };
 
   const handleConfirm = () => {
-    const finalProduct = customPrice !== '' ? { ...product, price: effectivePrice } : product;
     onConfirm({
       cartId: existingItem?.cartId || crypto.randomUUID(),
-      product: finalProduct,
+      product,
       selectedAddons,
       quantity,
       observation: observation.trim() || undefined,
+      customPrice: manualPrice !== null ? (parseFloat(manualPrice) || 0) : undefined,
     });
     resetAndClose();
   };
@@ -64,10 +77,13 @@ export function AddonsModal({ product, existingItem, open, onClose, onConfirm }:
             <Input
               type="number"
               step="0.01"
-              value={customPrice !== '' ? customPrice : product.price.toFixed(2)}
-              onChange={e => setCustomPrice(e.target.value)}
+              value={manualPrice !== null ? manualPrice : autoPrice.toFixed(2)}
+              onChange={e => handlePriceChange(e.target.value)}
               className="w-28 h-8 text-primary font-semibold text-lg bg-secondary/50 border-border"
             />
+            {manualPrice !== null && (
+              <span className="text-xs text-amber-500 font-semibold">Manual</span>
+            )}
           </div>
         </DialogHeader>
 
@@ -119,21 +135,11 @@ export function AddonsModal({ product, existingItem, open, onClose, onConfirm }:
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Quantidade</h4>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-10 w-10"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              >
+              <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
                 <Minus className="h-4 w-4" />
               </Button>
               <span className="text-lg font-bold w-8 text-center">{quantity}</span>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-10 w-10"
-                onClick={() => setQuantity(quantity + 1)}
-              >
+              <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => setQuantity(quantity + 1)}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>

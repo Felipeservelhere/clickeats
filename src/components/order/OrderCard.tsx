@@ -17,6 +17,12 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+function getDeliveryStatusBadge(status?: string) {
+  if (status === 'em_entrega') return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-600 font-bold">EM ENTREGA</span>;
+  if (status === 'entregue') return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-600 font-bold">ENTREGUE</span>;
+  return null;
+}
+
 export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, onClick, onInfoClick }: OrderCardProps) {
   const totalItems = order.items.reduce((s, i) => s + i.quantity, 0);
   const isCompleted = order.status === 'completed';
@@ -30,9 +36,21 @@ export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, 
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className={`order-type-${order.type} px-3 py-1 rounded-full text-sm font-heading font-bold`}>
-          {typeLabels[order.type]}#{order.number}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`order-type-${order.type} px-3 py-1 rounded-full text-sm font-heading font-bold`}>
+            {typeLabels[order.type]}#{order.number}
+          </span>
+          {onInfoClick && !isCompleted && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onInfoClick(); }}
+              className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors"
+              title="Editar dados do pedido"
+            >
+              <Info className="h-3.5 w-3.5 text-primary" />
+            </button>
+          )}
+          {getDeliveryStatusBadge(order.deliveryStatus)}
+        </div>
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" /> {formatTime(order.createdAt)}
         </span>
@@ -56,11 +74,6 @@ export function OrderCard({ order, onKitchenPrint, onDeliveryPrint, onComplete, 
       {/* Actions */}
       {!isCompleted && (
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-          {onInfoClick && (
-            <Button variant="outline" size="sm" className="gap-1.5 h-9 w-9 shrink-0 p-0" onClick={(e) => { e.stopPropagation(); onInfoClick(); }} title="Editar dados do pedido">
-              <Info className="h-3.5 w-3.5" />
-            </Button>
-          )}
           <Button variant="outline" size="sm" className="flex-1 gap-1.5 h-9 text-xs" onClick={(e) => { e.stopPropagation(); onKitchenPrint(); }}>
             <ChefHat className="h-3.5 w-3.5" /> Cozinha
           </Button>
