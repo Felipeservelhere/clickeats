@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CartItem, Order, OrderType, Neighborhood, PaymentMethod } from '@/types/order';
+import { CartItem, Order, OrderType, Neighborhood, PaymentMethod, getItemTotal } from '@/types/order';
 import { useNeighborhoods } from '@/hooks/useNeighborhoods';
 import { useOrders } from '@/contexts/OrderContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -174,9 +174,7 @@ export function CheckoutSheet({ open, onClose, items, onFinalize, forcedTableNum
     }
   };
 
-  const subtotal = items.reduce((s, i) => {
-    return s + (i.product.price + i.selectedAddons.reduce((a, ad) => a + ad.price, 0)) * i.quantity;
-  }, 0);
+  const subtotal = items.reduce((s, i) => s + getItemTotal(i), 0);
 
   const deliveryFee = orderType === 'entrega' && selectedNeighborhood ? selectedNeighborhood.fee : 0;
   const total = subtotal + deliveryFee;

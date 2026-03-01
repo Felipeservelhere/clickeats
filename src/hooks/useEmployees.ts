@@ -18,7 +18,7 @@ export function useEmployees() {
         .select('*')
         .order('name');
       if (error) throw error;
-      return (data || []) as Employee[];
+      return (data || []) as unknown as Employee[];
     },
   });
 }
@@ -33,7 +33,7 @@ export function useCreateEmployee() {
         .select()
         .single();
       if (error) throw error;
-      return data as Employee;
+      return data as unknown as Employee;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
   });
