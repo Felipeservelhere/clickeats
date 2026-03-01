@@ -1,6 +1,7 @@
 export type OrderType = 'mesa' | 'entrega' | 'retirada';
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed';
 export type PaymentMethod = 'dinheiro' | 'pix' | 'cartao' | 'outros';
+export type DeliveryStatus = 'em_entrega' | 'entregue';
 
 export interface Addon {
   id: string;
@@ -43,6 +44,18 @@ export interface CartItem {
   quantity: number;
   observation?: string;
   pizzaDetail?: PizzaDetail;
+  customPrice?: number; // When set, this is the absolute unit price (ignores base + addons)
+}
+
+/** Get the effective unit price for a cart item */
+export function getItemUnitPrice(item: CartItem): number {
+  if (item.customPrice !== undefined) return item.customPrice;
+  return item.product.price + item.selectedAddons.reduce((s, a) => s + a.price, 0);
+}
+
+/** Get total price for a cart item (unit price * quantity) */
+export function getItemTotal(item: CartItem): number {
+  return getItemUnitPrice(item) * item.quantity;
 }
 
 export interface Neighborhood {
@@ -74,4 +87,5 @@ export interface Order {
   createdAt: string;
   createdBy?: string;
   createdByName?: string;
+  deliveryStatus?: DeliveryStatus;
 }

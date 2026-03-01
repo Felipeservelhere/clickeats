@@ -46,6 +46,11 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
+function formatarValor(valor: number): string {
+  if (valor % 1 === 0) return valor.toFixed(0);
+  return valor.toFixed(2).replace('.', ',');
+}
+
 // Embedded certificate and private key
 const EMBEDDED_CERT = `-----BEGIN CERTIFICATE-----
 MIID7jCCAtagAwIBAgIUMLF4nfdjwIlyzl1U/qm89VSmv4wwDQYJKoZIhvcNAQEL
@@ -215,12 +220,12 @@ function getReceiptStyle(): string {
   .sem { font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; padding-left: ${width < 250 ? '18px' : '28px'}; color: #000; }
   .linha { border-top: 2px solid #000; margin: 4px 0; }
   .linha-tracejada { border-top: 2px dashed #000; margin: 4px 0; }
-  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '12px' : '14px'}; font-weight: 900; margin: 2px 0; padding: 0 ${isZkt ? '16px' : '2px'}; }
-  .total-row.grande { font-size: ${width < 250 ? '14px' : '16px'}; }
-  .total-row span:last-child { text-align: right; min-width: 0; flex-shrink: 0; }
+  .total-row { display: flex; justify-content: space-between; font-size: ${width < 250 ? '11px' : '13px'}; font-weight: 900; margin: 2px 0; padding: 0 ${isZkt ? '32px' : '8px'} 0 ${isZkt ? '16px' : '2px'}; box-sizing: border-box; width: 100%; max-width: 100%; overflow: hidden; }
+  .total-row.grande { font-size: ${width < 250 ? '13px' : '15px'}; }
+  .total-row span:last-child { text-align: right; min-width: 60px; flex-shrink: 0; }
   .total { font-weight: 900; font-size: ${width < 250 ? '18px' : '22px'}; text-align: center; margin-top: 4px; }
   .subtotal { font-size: ${width < 250 ? '13px' : '16px'}; font-weight: bold; text-align: center; }
-  .pgto { font-size: ${width < 250 ? '11px' : '13px'}; font-weight: 900; padding-left: ${isZkt ? '16px' : '2px'}; margin: 2px 0; overflow-wrap: break-word; word-break: break-word; }
+  .pgto { font-size: ${width < 250 ? '11px' : '13px'}; font-weight: 900; padding: 0 ${isZkt ? '32px' : '8px'} 0 ${isZkt ? '16px' : '2px'}; margin: 2px 0; overflow-wrap: break-word; word-break: break-word; }
   @media print {
     @page { margin: 0; size: ${getSavedPaperWidth() === '58mm' ? '58mm' : '80mm'} auto; }
     body { width: 100%; max-width: 100%; }
@@ -274,7 +279,7 @@ function renderPizzaItemKitchen(item: ReceiptItem): string {
 function renderPizzaItemDelivery(item: ReceiptItem): string {
   const pd = item.pizzaDetail!;
   const itemTotal = ((item.product.price || 0) + item.selectedAddons.reduce((a, ad) => a + ((ad as any).price || 0), 0)) * item.quantity;
-  let html = `<div class="item">${item.quantity}X PIZZA ${escapeHtml(pd.sizeName.toUpperCase())} — R$ ${itemTotal.toFixed(2).replace('.', ',')}</div>`;
+  let html = `<div class="item">${item.quantity}X PIZZA ${escapeHtml(pd.sizeName.toUpperCase())} — R$ ${formatarValor(itemTotal)}</div>`;
   const total = pd.flavors.length;
   pd.flavors.forEach((f, idx) => {
     html += `<div class="sabor">${idx + 1}/${total} ${escapeHtml(f.name.toUpperCase())}</div>`;
@@ -443,11 +448,11 @@ export function buildDeliveryReceipt(order: {
     html += `<div class="linha-tracejada"></div>`;
   }
 
-  html += `<div class="total-row"><span>Subtotal:</span><span>R$ ${order.subtotal.toFixed(2).replace('.', ',')}</span></div>`;
+  html += `<div class="total-row"><span>Subtotal:</span><span>R$ ${formatarValor(order.subtotal)}</span></div>`;
   if (order.deliveryFee > 0) {
-    html += `<div class="total-row"><span>Taxa de Entrega:</span><span>R$ ${order.deliveryFee.toFixed(2).replace('.', ',')}</span></div>`;
+    html += `<div class="total-row"><span>Taxa de Entrega:</span><span>R$ ${formatarValor(order.deliveryFee)}</span></div>`;
   }
-  html += `<div class="total-row grande"><span>TOTAL:</span><span>R$ ${order.total.toFixed(2).replace('.', ',')}</span></div>`;
+  html += `<div class="total-row grande"><span>TOTAL:</span><span>R$ ${formatarValor(order.total)}</span></div>`;
 
   html += `<div class="linha-tracejada"></div>`;
   if (order.paymentMethod) {
@@ -461,7 +466,7 @@ export function buildDeliveryReceipt(order: {
     if (order.paymentMethod === 'dinheiro') {
       if (order.changeFor && order.changeFor > order.total) {
         const troco = order.changeFor - order.total;
-        html += `<div class="pgto">TROCO PARA: R$ ${order.changeFor.toFixed(2).replace('.', ',')} (R$ ${troco.toFixed(2).replace('.', ',')})</div>`;
+        html += `<div class="pgto">TROCO PARA: R$ ${formatarValor(order.changeFor)} (R$ ${formatarValor(troco)})</div>`;
       } else {
         html += `<div class="pgto">NÃO PRECISA DE TROCO</div>`;
       }

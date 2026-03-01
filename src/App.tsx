@@ -12,6 +12,9 @@ import NewOrder from "./pages/NewOrder";
 import Cardapio from "./pages/Cardapio";
 import Taxas from "./pages/Taxas";
 import Mesas from "./pages/Mesas";
+import Clientes from "./pages/Clientes";
+import Funcionarios from "./pages/Funcionarios";
+import Entregas from "./pages/Entregas";
 import AppInstall from "./pages/AppInstall";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -42,6 +45,9 @@ function AuthGate() {
             <Route path="/cardapio" element={<Cardapio />} />
             <Route path="/taxas" element={<Taxas />} />
             <Route path="/mesas" element={<Mesas />} />
+            <Route path="/clientes" element={<Clientes />} />
+            <Route path="/funcionarios" element={<Funcionarios />} />
+            <Route path="/entregas" element={<Entregas />} />
             <Route path="/app" element={<AppInstall />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

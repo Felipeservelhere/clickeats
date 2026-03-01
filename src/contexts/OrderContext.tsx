@@ -15,7 +15,6 @@ interface OrderContextType {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-// Convert DB row to Order
 function rowToOrder(row: any): Order {
   return {
     id: row.id,
@@ -40,10 +39,10 @@ function rowToOrder(row: any): Order {
     createdAt: row.created_at,
     createdBy: row.created_by || undefined,
     createdByName: row.created_by_name || undefined,
+    deliveryStatus: row.delivery_status || undefined,
   };
 }
 
-// Convert Order to DB insert
 function orderToRow(order: Order, userId?: string, userName?: string) {
   return {
     id: order.id,
@@ -67,6 +66,7 @@ function orderToRow(order: Order, userId?: string, userName?: string) {
     change_for: order.changeFor || null,
     created_by: userId || null,
     created_by_name: userName || null,
+    delivery_status: order.deliveryStatus || null,
   };
 }
 
@@ -74,7 +74,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const { user } = useAuth();
 
-  // Load orders from DB
   useEffect(() => {
     const fetchOrders = async () => {
       const { data, error } = await supabase
@@ -87,7 +86,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
     fetchOrders();
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel('orders-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
@@ -107,14 +105,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const addOrder = useCallback(async (order: Order) => {
     const row = orderToRow(order, user?.id, user?.display_name);
-    // Optimistic update
     setOrders(prev => [order, ...prev]);
     await supabase.from('orders').insert([row]);
   }, [user]);
@@ -158,6 +153,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     if (updates.changeFor !== undefined) dbUpdates.change_for = updates.changeFor;
     if (updates.tableNumber !== undefined) dbUpdates.table_number = updates.tableNumber;
     if (updates.tableReference !== undefined) dbUpdates.table_reference = updates.tableReference;
+    if (updates.deliveryStatus !== undefined) dbUpdates.delivery_status = updates.deliveryStatus;
     if (Object.keys(dbUpdates).length > 0) {
       await supabase.from('orders').update(dbUpdates).eq('id', id);
     }

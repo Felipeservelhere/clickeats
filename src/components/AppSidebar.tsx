@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, BookOpen, MapPin, Grid3X3, Printer, LogOut, Smartphone, Sun, Moon } from "lucide-react";
+import { Flame, BookOpen, MapPin, Grid3X3, Printer, LogOut, Smartphone, Sun, Moon, Users, UserCheck, Truck } from "lucide-react";
 import logo from "@/assets/logo.svg";
 import { NavLink } from "@/components/NavLink";
 import { PrinterSettings } from "@/components/PrinterSettings";
@@ -21,6 +21,9 @@ const navItems = [
   { title: "Cardápio", url: "/cardapio", icon: BookOpen },
   { title: "Taxa de Entrega", url: "/taxas", icon: MapPin },
   { title: "Mesas", url: "/mesas", icon: Grid3X3 },
+  { title: "Clientes", url: "/clientes", icon: Users },
+  { title: "Funcionários", url: "/funcionarios", icon: UserCheck },
+  { title: "Entregas", url: "/entregas", icon: Truck },
   { title: "App", url: "/app", icon: Smartphone },
 ];
 
@@ -64,38 +67,26 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
 
-        {/* Printer config at bottom */}
         <div className="mt-auto p-2 border-t border-border space-y-1">
           {!collapsed && user && (
             <div className="px-3 py-1 text-xs text-muted-foreground truncate">
               {user.display_name}
             </div>
           )}
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors w-full"
-            title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
-          >
+          <button onClick={toggleTheme} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors w-full" title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}>
             {theme === 'dark' ? <Sun className="h-5 w-5 shrink-0" /> : <Moon className="h-5 w-5 shrink-0" />}
             {!collapsed && <span className="text-sm">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
           </button>
-          <button
-            onClick={() => setShowPrinterSettings(true)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors w-full"
-          >
+          <button onClick={() => setShowPrinterSettings(true)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors w-full">
             <Printer className="h-5 w-5 shrink-0" />
             {!collapsed && <span className="text-sm">Impressora</span>}
           </button>
-          <button
-            onClick={logout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors w-full"
-          >
+          <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors w-full">
             <LogOut className="h-5 w-5 shrink-0" />
             {!collapsed && <span className="text-sm">Sair</span>}
           </button>
         </div>
       </Sidebar>
-
       <PrinterSettings open={showPrinterSettings} onClose={() => setShowPrinterSettings(false)} />
     </>
   );

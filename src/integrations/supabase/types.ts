@@ -285,6 +285,38 @@ export type Database = {
           },
         ]
       }
+      employees: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          name: string
+          roles: string[]
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          roles?: string[]
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          roles?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fila_impressao: {
         Row: {
           company_id: string | null
@@ -390,6 +422,7 @@ export type Database = {
           customer_name: string | null
           customer_phone: string | null
           delivery_fee: number
+          delivery_status: string | null
           id: string
           items: Json
           neighborhood: Json | null
@@ -415,6 +448,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           delivery_fee?: number
+          delivery_status?: string | null
           id?: string
           items?: Json
           neighborhood?: Json | null
@@ -440,6 +474,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           delivery_fee?: number
+          delivery_status?: string | null
           id?: string
           items?: Json
           neighborhood?: Json | null

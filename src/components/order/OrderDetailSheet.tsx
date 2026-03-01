@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Order, CartItem, Neighborhood, PaymentMethod } from '@/types/order';
+import { Order, CartItem, Neighborhood, PaymentMethod, getItemTotal, getItemUnitPrice } from '@/types/order';
 import { useOrders } from '@/contexts/OrderContext';
 import { useNeighborhoods } from '@/hooks/useNeighborhoods';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -78,9 +78,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
   const typeLabel = currentOrder.type === 'mesa' ? `🍽️ Mesa ${currentOrder.tableReference || ''}` : currentOrder.type === 'entrega' ? '🛵 Entrega' : '🏪 Retirada';
 
   const recalcTotals = (items: CartItem[], fee: number) => {
-    const newSubtotal = items.reduce((sum, item) => {
-      return sum + (item.product.price + item.selectedAddons.reduce((a, ad) => a + ad.price, 0)) * item.quantity;
-    }, 0);
+    const newSubtotal = items.reduce((sum, item) => sum + getItemTotal(item), 0);
     return { subtotal: newSubtotal, total: newSubtotal + fee };
   };
 
@@ -241,7 +239,7 @@ export function OrderDetailSheet({ order, open, onClose, onKitchenPrint, onDeliv
                     )}
                   </div>
                   <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                    R$ {((item.product.price + item.selectedAddons.reduce((a, ad) => a + ad.price, 0)) * item.quantity).toFixed(2)}
+                    R$ {getItemTotal(item).toFixed(2)}
                   </span>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button
